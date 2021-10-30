@@ -1,0 +1,60 @@
+Calling the input parsing code
+Processor_time = 0us; 	CPU clock cycle = 0; 	Operation = No Operation
+Processor_time = 312us; 	CPU clock cycle = 1; 	Operation = No Operation
+Processor_time = 624us; 	CPU clock cycle = 2; 	Operation = No Operation
+Processor_time = 936us; 	CPU clock cycle = 3; 	Operation = No Operation
+Processor_time = 1248us; 	CPU clock cycle = 4; 	Operation = No Operation
+Processor_time = 1560us; 	CPU clock cycle = 5; 	Operation = No Operation
+Processor_time = 1872us; 	CPU clock cycle = 6; 	Operation = No Operation
+Processor_time = 2184us; 	CPU clock cycle = 7; 	Operation = No Operation
+Processor_time = 2496us; 	CPU clock cycle = 8; 	Operation = No Operation
+Processor_time = 2808us; 	CPU clock cycle = 9; 	Operation = No Operation
+Processor_time = 3120us; 	CPU clock cycle = 10; 	Operation = 2; 	HEX Addr = 0x01FF97000;
+Processor_time = 3432us; 	CPU clock cycle = 11; 	Operation = 2; 	HEX Addr = 0x01FF97080;
+Processor_time = 3744us; 	CPU clock cycle = 12; 	Operation = No Operation
+Processor_time = 4056us; 	CPU clock cycle = 13; 	Operation = No Operation
+Processor_time = 4368us; 	CPU clock cycle = 14; 	Operation = No Operation
+Processor_time = 4680us; 	CPU clock cycle = 15; 	Operation = No Operation
+Processor_time = 4992us; 	CPU clock cycle = 16; 	Operation = No Operation
+Processor_time = 5304us; 	CPU clock cycle = 17; 	Operation = No Operation
+Processor_time = 5616us; 	CPU clock cycle = 18; 	Operation = No Operation
+Processor_time = 5928us; 	CPU clock cycle = 19; 	Operation = No Operation
+Processor_time = 6240us; 	CPU clock cycle = 20; 	Operation = No Operation
+Processor_time = 6552us; 	CPU clock cycle = 21; 	Operation = No Operation
+Processor_time = 6864us; 	CPU clock cycle = 22; 	Operation = 0; 	HEX Addr = 0x10FFFCF00;
+Processor_time = 7176us; 	CPU clock cycle = 23; 	Operation = No Operation
+Processor_time = 7488us; 	CPU clock cycle = 24; 	Operation = No Operation
+Processor_time = 7800us; 	CPU clock cycle = 25; 	Operation = No Operation
+Processor_time = 8112us; 	CPU clock cycle = 26; 	Operation = No Operation
+Processor_time = 8424us; 	CPU clock cycle = 27; 	Operation = No Operation
+Processor_time = 8736us; 	CPU clock cycle = 28; 	Operation = No Operation
+Processor_time = 9048us; 	CPU clock cycle = 29; 	Operation = No Operation
+Processor_time = 9360us; 	CPU clock cycle = 30; 	Operation = 1; 	HEX Addr = 0x10FFFCF80;
+Processor_time = 9672us; 	CPU clock cycle = 31; 	Operation = 2; 	HEX Addr = 0x01FF9C000;
+Processor_time = 9984us; 	CPU clock cycle = 32; 	Operation = 2; 	HEX Addr = 0x01FF9C080;
+Processor_time = 10296us; 	CPU clock cycle = 33; 	Operation = 0; 	HEX Addr = 0x10FFFCF00;
+Processor_time = 10608us; 	CPU clock cycle = 34; 	Operation = 1; 	HEX Addr = 0x10FFDFF80;
+Processor_time = 10920us; 	CPU clock cycle = 35; 	Operation = No Operation
+Processor_time = 11232us; 	CPU clock cycle = 36; 	Operation = No Operation
+Processor_time = 11544us; 	CPU clock cycle = 37; 	Operation = No Operation
+Processor_time = 11856us; 	CPU clock cycle = 38; 	Operation = No Operation
+Processor_time = 12168us; 	CPU clock cycle = 39; 	Operation = No Operation
+Processor_time = 12480us; 	CPU clock cycle = 40; 	Operation = No Operation
+Processor_time = 12792us; 	CPU clock cycle = 41; 	Operation = No Operation
+Processor_time = 13104us; 	CPU clock cycle = 42; 	Operation = No Operation
+Processor_time = 13416us; 	CPU clock cycle = 43; 	Operation = No Operation
+Processor_time = 13728us; 	CPU clock cycle = 44; 	Operation = No Operation
+Processor_time = 14040us; 	CPU clock cycle = 45; 	Operation = 2; 	HEX Addr = 0x01FFD7000;
+Processor_time = 14352us; 	CPU clock cycle = 46; 	Operation = 2; 	HEX Addr = 0x01FFD7080;
+Processor_time = 14664us; 	CPU clock cycle = 47; 	Operation = 0; 	HEX Addr = 0x10FFDFF00;
+Processor_time = 14976us; 	CPU clock cycle = 48; 	Operation = 1; 	HEX Addr = 0x10FFDFF80;
+Processor_time = 15288us; 	CPU clock cycle = 49; 	Operation = 2; 	HEX Addr = 0x01FE97000;
+Processor_time = 15600us; 	CPU clock cycle = 50; 	Operation = No Operation
+Processor_time = 15912us; 	CPU clock cycle = 51; 	Operation = No Operation
+Processor_time = 16224us; 	CPU clock cycle = 52; 	Operation = No Operation
+Processor_time = 16536us; 	CPU clock cycle = 53; 	Operation = No Operation
+Processor_time = 16848us; 	CPU clock cycle = 54; 	Operation = No Operation
+Processor_time = 17160us; 	CPU clock cycle = 55; 	Operation = No Operation
+Processor_time = 17472us; 	CPU clock cycle = 56; 	Operation = No Operation
+Processor_time = 17784us; 	CPU clock cycle = 57; 	Operation = No Operation
+Processor_time = 18096us; 	CPU clock cycle = 58; 	Operation = No Operation
