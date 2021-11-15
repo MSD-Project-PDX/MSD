@@ -7,6 +7,6 @@ work_dir:
 compile: python
 	vlog mem_con.sv
 run:
-	vsim -c -do "run -all" mem_con
+	vsim -c -do "run -all" mem_con +debug_en=1
 clean:
 	rm -rf transcript work ip_*

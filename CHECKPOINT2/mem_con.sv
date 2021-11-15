@@ -11,7 +11,9 @@ module mem_con;
 	//Simulation time, last (to complete the last transfer), remove (queue to store the request time)
 	// Max value = 18446744073709551615
 	int s, a, count;
+	int debug_en;
 
+	initial $value$plusargs("debug_en=%d", debug_en);
 	always begin
 		#1 sim_time++;
 	end
@@ -39,7 +41,8 @@ module mem_con;
 
 	task add_to_mc_q;
 		local_var = {q_ip_oper.pop_front(), q_ip_addr.pop_front()};
-		$display(">>> Adding new element to the queue.. %h ... at sim_time = %0d --> q_mc.size = %0d\n", local_var, sim_time, q_mc.size()+1);
+		if(debug_en)
+			$display(">>> Adding new element to the queue.. %h ... at sim_time = %0d --> q_mc.size = %0d\n", local_var, sim_time, q_mc.size()+1);
 		q_mc.push_back(local_var);
 		remove.push_back(sim_time);
 		q_ip_time.pop_front();
@@ -88,10 +91,12 @@ module mem_con;
 		if(remove.size() >0) begin
 			repeat(4)
 			if(remove[0]+100 == sim_time)begin
-				$display("<<< Remove %h from the queue at time %0d", q_mc[0], sim_time);
+				if(debug_en == 1)
+					$display("<<< Remove %h from the queue at time %0d", q_mc[0], sim_time);
 				q_mc.pop_front();
 				remove.pop_front();
-				display_q;
+				if(debug_en)
+					display_q;
 			end
 		end
 	end
