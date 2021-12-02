@@ -1,0 +1,182 @@
+# vsim -c -do "run -all" temp 
+# Start time: 16:19:33 on Nov 28,2021
+# ** Note: (vsim-3813) Design is being optimized due to module recompilation...
+# ** Warning: temp.sv(133): (vopt-2240) Treating stand-alone use of function 'pop_front' as an implicit VOID cast.
+# ** Warning: temp.sv(134): (vopt-2240) Treating stand-alone use of function 'pop_front' as an implicit VOID cast.
+# //  Questa Sim-64
+# //  Version 2019.2_1 linux_x86_64 May 13 2019
+# //
+# //  Copyright 1991-2019 Mentor Graphics Corporation
+# //  All Rights Reserved.
+# //
+# //  QuestaSim and its associated documentation contain trade
+# //  secrets and commercial or financial information that are the property of
+# //  Mentor Graphics Corporation and are privileged, confidential,
+# //  and exempt from disclosure under the Freedom of Information Act,
+# //  5 U.S.C. Section 552. Furthermore, this information
+# //  is prohibited from disclosure under the Trade Secrets Act,
+# //  18 U.S.C. Section 1905.
+# //
+# Loading sv_std.std
+# Loading work.temp(fast)
+# ** Warning: (vsim-PLI-3691) Expected a system task, not a system function '$fscanf'.
+#    Time: 0 ns  Iteration: 0  Instance: /temp File: temp.sv Line: 43
+# run -all
+# >>>>>>>>Adding to queue...
+# MC QUEUE @0 SIZE=1 q_mc = '{0}
+# 
+# 
+# >>>>>>>>Adding to queue...
+# MC QUEUE @1 SIZE=2 q_mc = '{0, 1}
+# 
+# 
+# >>>>>>>>Adding to queue...
+# MC QUEUE @2 SIZE=3 q_mc = '{0, 1, 2}
+# 
+# 
+# >>>>>>>>Adding to queue...
+# MC QUEUE @3 SIZE=4 q_mc = '{0, 1, 2, 3}
+# 
+# 
+# >>>>>>>>Adding to queue...
+# MC QUEUE @4 SIZE=5 q_mc = '{0, 1, 2, 3, 4}
+# 
+# 
+# >>>>>>>>Adding to queue...
+# MC QUEUE @5 SIZE=6 q_mc = '{0, 1, 2, 3, 4, 5}
+# 
+# 
+# >>>>>>>>Adding to queue...
+# MC QUEUE @6 SIZE=7 q_mc = '{0, 1, 2, 3, 4, 5, 6}
+# 
+# 
+# >>>>>>>>Adding to queue...
+# MC QUEUE @7 SIZE=8 q_mc = '{0, 1, 2, 3, 4, 5, 6, 7}
+# 
+# 
+# >>>>>>>>Adding to queue...
+# MC QUEUE @8 SIZE=9 q_mc = '{0, 1, 2, 3, 4, 5, 6, 7, 8}
+# 
+# 
+# >>>>>>>>Adding to queue...
+# MC QUEUE @9 SIZE=10 q_mc = '{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+# 
+# 
+# >>>>>>>>Adding to queue...
+# MC QUEUE @10 SIZE=11 q_mc = '{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+# 
+# 
+# >>>>>>>>Adding to queue...
+# MC QUEUE @11 SIZE=12 q_mc = '{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}
+# 
+# 
+# >>>>>>>>Adding to queue...
+# MC QUEUE @12 SIZE=13 q_mc = '{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
+# 
+# 
+# >>>>>>>>Adding to queue...
+# MC QUEUE @13 SIZE=14 q_mc = '{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}
+# 
+# 
+# >>>>>>>>Adding to queue...
+# MC QUEUE @14 SIZE=15 q_mc = '{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14}
+# 
+# 
+# >>>>>>>>Adding to queue...
+# MC QUEUE @15 SIZE=16 q_mc = '{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
+# 
+# 
+# <<<<<<<<Removing from the queue..
+# MC QUEUE @100 SIZE=15 q_mc = '{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
+# 
+# 
+# >>>>>>>>Adding to queue...
+# MC QUEUE @100 SIZE=16 q_mc = '{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
+# 
+# 
+# <<<<<<<<Removing from the queue..
+# MC QUEUE @101 SIZE=15 q_mc = '{2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
+# 
+# 
+# >>>>>>>>Adding to queue...
+# MC QUEUE @101 SIZE=16 q_mc = '{2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 16}
+# 
+# 
+# <<<<<<<<Removing from the queue..
+# MC QUEUE @102 SIZE=15 q_mc = '{3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 16}
+# 
+# 
+# <<<<<<<<Removing from the queue..
+# MC QUEUE @103 SIZE=14 q_mc = '{4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 16}
+# 
+# 
+# <<<<<<<<Removing from the queue..
+# MC QUEUE @104 SIZE=13 q_mc = '{5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 16}
+# 
+# 
+# <<<<<<<<Removing from the queue..
+# MC QUEUE @105 SIZE=12 q_mc = '{6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 16}
+# 
+# 
+# <<<<<<<<Removing from the queue..
+# MC QUEUE @106 SIZE=11 q_mc = '{7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 16}
+# 
+# 
+# <<<<<<<<Removing from the queue..
+# MC QUEUE @107 SIZE=10 q_mc = '{8, 9, 10, 11, 12, 13, 14, 15, 16, 16}
+# 
+# 
+# <<<<<<<<Removing from the queue..
+# MC QUEUE @108 SIZE=9 q_mc = '{9, 10, 11, 12, 13, 14, 15, 16, 16}
+# 
+# 
+# <<<<<<<<Removing from the queue..
+# MC QUEUE @109 SIZE=8 q_mc = '{10, 11, 12, 13, 14, 15, 16, 16}
+# 
+# 
+# <<<<<<<<Removing from the queue..
+# MC QUEUE @110 SIZE=7 q_mc = '{11, 12, 13, 14, 15, 16, 16}
+# 
+# 
+# <<<<<<<<Removing from the queue..
+# MC QUEUE @111 SIZE=6 q_mc = '{12, 13, 14, 15, 16, 16}
+# 
+# 
+# <<<<<<<<Removing from the queue..
+# MC QUEUE @112 SIZE=5 q_mc = '{13, 14, 15, 16, 16}
+# 
+# 
+# <<<<<<<<Removing from the queue..
+# MC QUEUE @113 SIZE=4 q_mc = '{14, 15, 16, 16}
+# 
+# 
+# <<<<<<<<Removing from the queue..
+# MC QUEUE @114 SIZE=3 q_mc = '{15, 16, 16}
+# 
+# 
+# <<<<<<<<Removing from the queue..
+# MC QUEUE @115 SIZE=2 q_mc = '{16, 16}
+# 
+# 
+# <<<<<<<<Removing from the queue..
+# MC QUEUE @200 SIZE=1 q_mc = '{16}
+# 
+# 
+# <<<<<<<<Removing from the queue..
+# MC QUEUE @201 SIZE=0 q_mc = '{}
+# 
+# 
+# >>>>>>>>Adding to queue...
+# MC QUEUE @1000000000000000 SIZE=2 q_mc = '{28534276096, 28534276096}
+# 
+# 
+# <<<<<<<<Removing from the queue..
+# MC QUEUE @1000000000000100 SIZE=0 q_mc = '{}
+# 
+# 
+# Simulation ends here.
+# Simulation Time = 1000000000000101
+# ** Note: $finish    : temp.sv(120)
+#    Time: 303 ns  Iteration: 1  Instance: /temp
+# End time: 16:19:34 on Nov 28,2021, Elapsed time: 0:00:01
+# Errors: 0, Warnings: 3
