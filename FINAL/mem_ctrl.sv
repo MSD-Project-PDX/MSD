@@ -2,6 +2,7 @@ module mem_ctrl;
   int ip;
   longint t, inst, addr;
   longint unsigned q_mc[$:15];
+  longint unsigned q_pending[$:15];
   longint unsigned q_remove[$:15];
   longint q_ip_time_next [$:3];
   int q_ip_inst_next [$:3];
@@ -10,15 +11,15 @@ module mem_ctrl;
   bit first_ip=1, last_ip=0;
   int size_ip_q;
   longint unsigned sim_time;
-  bit q_full;
+  bit q_mc_full;
 
   int removed;
 
   always #1 sim_time++;
 
   always @ (sim_time) begin
-    if(q_mc.size() == 16) q_full = 1;
-    else q_full = 0;
+    if(q_mc.size() == 16) q_mc_full = 1;
+    else q_mc_full = 0;
   end
 
   string ip_file;
@@ -43,7 +44,7 @@ module mem_ctrl;
                     fork
 		    for(int i=0; i<size_ip_q; i++) begin
 			//$display("disp --> %d %d %h", q_ip_time_next.pop_front(), q_ip_inst_next.pop_front(), q_ip_addr_next.pop_front());
-			wait(!q_full);
+			wait(!q_mc_full);
 			//$display("disp --> %d %d %h", q_ip_time_next[i], q_ip_inst_next[i], q_ip_addr_next[i]);
 		    end
 		    join
@@ -63,7 +64,7 @@ module mem_ctrl;
 	fork
 	for(int i=0; i<size_ip_q; i++) begin
 		//$display("disp --> %d %d %h", q_ip_time_next.pop_front(), q_ip_inst_next.pop_front(), q_ip_addr_next.pop_front());
-		wait(!q_full);
+		wait(!q_mc_full);
 		//$display("disp --> %d %d %h", q_ip_time_next[i], q_ip_inst_next[i], q_ip_addr_next[i]);
 	end
 	join
@@ -117,7 +118,7 @@ module mem_ctrl;
 	repeat(i) begin
 		q_mc.push_back(q_ip_time_next.pop_front());
 		$display("debug1: reached here");
-		//calc_valid_time(q_ip_inst_next.pop_front(), q_ip_addr_next.pop_front());
+		calc_valid_time(q_ip_inst_next.pop_front(), q_ip_addr_next.pop_front());
 		q_remove.push_back(sim_time);
 	end
 	if (debug_en)
@@ -130,6 +131,21 @@ module mem_ctrl;
 	$display("MC QUEUE @%0d SIZE=%0d q_mc = %p\n\n", sim_time, q_mc.size(), q_mc);
      end
   endtask
+
+
+  /*
+  //Pending queue implementation
+  always@(sim_time) begin
+     if(q_ip_time_next.size()>0)begin
+	if( ((last_ip==0 && q_ip_time_next.size()>0) || (last_ip==1 && q_ip_time_next.size()>0)) && (q_ip_time_next[0] >= sim_time) )begin
+	    if()begin
+
+	    end
+	end
+     end
+  end
+  */
+
 
   always @(sim_time) begin
 	if( (last_ip==0 && q_ip_time_next.size()>0) || (last_ip==1 && q_ip_time_next.size()>0) )begin
