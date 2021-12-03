@@ -1,14 +1,8 @@
 module mem_ctrl;
   int ip;
   longint t, inst, addr;
-  //int debug_en =1; //TO BE CHANGED
   logic [34:0] q_mc[$:15];
   longint unsigned q_remove[$:15];
-
-  //int ip_time_next ;
-  //int ip_inst_next ;
-  //int ip_addr_next ;
-
   longint q_ip_time_next [$:3];
   int q_ip_inst_next [$:3];
   int q_ip_addr_next [$:3];
@@ -27,27 +21,15 @@ module mem_ctrl;
     else q_full = 0;
   end
 
-  always @(sim_time) begin
-    //if(q_mc.size()<16)
-    //  q_mc.push_back(2);
-
-    //$display("q size = %0d, q_mc = %p", q_mc.size(), q_mc);
-  end
-
-  //initial #100 $finish;
-
   string ip_file;
   int debug_en;
 
   initial begin
 	$value$plusargs("ip_file=%s", ip_file);
-	$display("dipplay ip_file = %s", ip_file);
-	$display("dipplay ip_file = %0s", ip_file);
+	$value$plusargs("debug_en=%d", debug_en);
   end
-  initial $value$plusargs("debug_en=%d", debug_en);
 
   initial begin
-	//ip = $fopen("fp1.txt", "r");
 	ip = $fopen(ip_file, "r");
 
 	while(!$feof(ip)) begin
@@ -102,7 +84,6 @@ module mem_ctrl;
   task display_q;
      if(debug_en) begin
 	$display("MC QUEUE @%0d SIZE=%0d q_mc = %p\n\n", sim_time, q_mc.size(), q_mc);
-	//$display("q_remove = %p", q_remove);
      end
   endtask
 
