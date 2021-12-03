@@ -12,14 +12,20 @@ module mem_ctrl;
   int size_ip_q;
   longint unsigned sim_time;
   bit q_mc_full;
+  bit q_pending_full;
 
   int removed;
 
   always #1 sim_time++;
 
   always @ (sim_time) begin
-    if(q_mc.size() == 16) q_mc_full = 1;
-    else q_mc_full = 0;
+     fork
+	if(q_mc.size() == 16) q_mc_full = 1;
+	else q_mc_full = 0;
+
+	if(q_pending.size() == 16) q_pending_full = 1;
+	else q_pending_full = 0;
+     join
   end
 
   string ip_file;
@@ -41,14 +47,7 @@ module mem_ctrl;
 			q_ip_addr_next.push_back(addr);
 		end else begin
                     size_ip_q = q_ip_time_next.size();
-                    fork
-		    for(int i=0; i<size_ip_q; i++) begin
-			//$display("disp --> %d %d %h", q_ip_time_next.pop_front(), q_ip_inst_next.pop_front(), q_ip_addr_next.pop_front());
-			wait(!q_mc_full);
-			//$display("disp --> %d %d %h", q_ip_time_next[i], q_ip_inst_next[i], q_ip_addr_next[i]);
-		    end
-		    join
-		    //$display("\n\n\n");
+		    wait(!q_mc_full);
                     wait(q_ip_time_next.size()==0);
 		    q_ip_time_next.delete();
 		    q_ip_inst_next.delete();
@@ -61,14 +60,7 @@ module mem_ctrl;
 	end
 	//last set of inputs
         size_ip_q = q_ip_time_next.size();
-	fork
-	for(int i=0; i<size_ip_q; i++) begin
-		//$display("disp --> %d %d %h", q_ip_time_next.pop_front(), q_ip_inst_next.pop_front(), q_ip_addr_next.pop_front());
-		wait(!q_mc_full);
-		//$display("disp --> %d %d %h", q_ip_time_next[i], q_ip_inst_next[i], q_ip_addr_next[i]);
-	end
-	join
-	//$display("\n\n\n");
+	wait(!q_mc_full);
 	last_ip = 1;
   end
 
@@ -118,7 +110,7 @@ module mem_ctrl;
 	repeat(i) begin
 		q_mc.push_back(q_ip_time_next.pop_front());
 		$display("debug1: reached here");
-		calc_valid_time(q_ip_inst_next.pop_front(), q_ip_addr_next.pop_front());
+		//calc_valid_time(q_ip_inst_next.pop_front(), q_ip_addr_next.pop_front());
 		q_remove.push_back(sim_time);
 	end
 	if (debug_en)
@@ -133,18 +125,18 @@ module mem_ctrl;
   endtask
 
 
-  /*
-  //Pending queue implementation
-  always@(sim_time) begin
-     if(q_ip_time_next.size()>0)begin
-	if( ((last_ip==0 && q_ip_time_next.size()>0) || (last_ip==1 && q_ip_time_next.size()>0)) && (q_ip_time_next[0] >= sim_time) )begin
-	    if()begin
-
-	    end
-	end
-     end
-  end
-  */
+  
+//  //Pending queue implementation
+//  always@(sim_time) begin
+//     if(q_ip_time_next.size()>0)begin
+//	if( ((last_ip==0 && q_ip_time_next.size()>0) || (last_ip==1 && q_ip_time_next.size()>0)) && (q_ip_time_next[0] >= sim_time) )begin
+//	    if(q_ip_time_next[0] == sim_time && q_pending.size() < 16)begin
+//		
+//	    end
+//	end
+//     end
+//  end
+  
 
 
   always @(sim_time) begin
