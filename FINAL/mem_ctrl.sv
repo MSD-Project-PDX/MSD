@@ -1,7 +1,7 @@
 module mem_ctrl;
   int ip;
   longint t, inst, addr;
-  logic [34:0] q_mc[$:15];
+  longint unsigned q_mc[$:15];
   longint unsigned q_remove[$:15];
   longint q_ip_time_next [$:3];
   int q_ip_inst_next [$:3];
@@ -71,9 +71,53 @@ module mem_ctrl;
 	last_ip = 1;
   end
 
+
+
+  int db_arr[16][3]; //R C valid_time
+
+  function int calc_time(int BG, int B, int BG_B, int R, int oper);
+	if(db_arr[BG_B][0] == 1)begin
+		if(db_arr[BG_B][1] == R)
+			return(100); //RD
+		else
+			return(100); //PRE + ACT + RD
+	end else begin
+		return (100); 	//ACT + RD
+	end
+  endfunction
+
+
+
+  task automatic calc_valid_time(int local_oper, bit [32:0] local_addr);
+
+     int flag = 0;
+     bit [1:0] BG, B;
+     bit [3:0] BG_B; 				
+     BG = local_addr[7:6];
+     B  = local_addr[9:8];
+     BG_B = {BG,B};				//BG_B = '{local_addr[7:6],local_addr[9:8]}; 	
+
+     if(db_arr[BG_B][0] == 1)begin
+	wait(db_arr[BG_B][2]==0);
+	flag = 1;
+     end else begin
+	flag = 1;
+     end
+    
+     if(flag == 1)begin
+	db_arr[BG_B][2] = calc_time(BG, B, BG_B, db_arr[BG_B][1], local_oper) ;
+	db_arr[BG_B][0] = 1 ;			//VALID = 1
+	db_arr[BG_B][1] = local_addr[32:18];	//ROW number
+     end
+  endtask
+
+
   task add_to_mc_q(int i); 
+        longint unsigned temp_time;
 	repeat(i) begin
 		q_mc.push_back(q_ip_time_next.pop_front());
+		$display("debug1: reached here");
+		//calc_valid_time(q_ip_inst_next.pop_front(), q_ip_addr_next.pop_front());
 		q_remove.push_back(sim_time);
 	end
 	if (debug_en)
@@ -104,7 +148,7 @@ module mem_ctrl;
 		add_to_mc_q(size_ip_q);
 	    end
 	end else if (last_ip == 1 && q_ip_time_next.size() ==0) begin
-		//finish tge simulation after 100 clock cycles
+		//finish the simulation after 100 clock cycles
         	//if(sim_time == last + 101) begin
         	if(sim_time == 64'd1000000000000000 + 101) begin
                 	$display("Simulation ends here.");
