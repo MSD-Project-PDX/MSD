@@ -222,21 +222,18 @@ module mem_ctrl;
 
   //MC Queue implemenation (Pending Q ---> MC Q)
   always@(sim_time)begin
+     repeat(16)begin
 	if(q_mc.size() < 16) begin
           if(q_pending_time.size()>0)begin
 	    q_mc.push_back(q_pending_time.pop_front());
 	    q_mc_oper.push_back(q_pending_oper.pop_front());
 	    q_mc_addr.push_back(q_pending_addr.pop_front());
-	    //q_reference = q_mc.size() - 1;
-	    //fork
-	    //	calc_valid_time(q_pending_oper.pop_front(), q_pending_addr.pop_front(), q_reference);
-	    //join_none
-	    //q_remove.push_back()
 	    if (debug_en)
 	    	$display(">>>>>>>>Adding to MC queue...");
 	    display_q;
 	  end
 	end
+     end
   end 
 
   always@(sim_time) begin
@@ -265,8 +262,10 @@ module mem_ctrl;
   //REMOVE FROM MC Q
   always@(sim_time) begin
 	for(int i=0; i<16; i++)begin
-	    if(db_arr[i][1] == 1) begin
+	    if(db_arr[i][0] == 1 && db_arr[i][1] == 1) begin
 		q_mc.delete(db_arr[i][4]);
+		q_mc_oper.delete(db_arr[i][4]);
+		q_mc_addr.delete(db_arr[i][4]);
 		$display("REMOVE FROM MC QUEUE @%0d %p",sim_time,q_mc);
 		update_db(db_arr[i][4]);
 	    end
