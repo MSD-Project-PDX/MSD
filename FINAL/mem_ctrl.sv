@@ -115,6 +115,12 @@ module mem_ctrl;
   // 1  Currently in progress
   //-1  Has been accessed before, but currently not active (Open page)
 
+
+  //task start_print_operation(int );
+  //      
+  //endtask
+
+
   int extra_delay = 0;
   int delay;
 
@@ -125,34 +131,40 @@ module mem_ctrl;
 	if(first == 0) begin
 		arr = {bg, b, row, col, oper};
 		$display("delay = %0d", TRCD);
+		//start_print_operation(.trcd(TRCD));
 		return (TRCD);		//48
 	end else begin
-		if(arr[0] != bg) extra_delay  = 2*4;
+		if(arr[0] != bg) extra_delay  = TRRD_S;
 		else
-		  if(arr[1] != b) extra_delay = 2*6;
+		  if(arr[1] != b) extra_delay = TRRD_L;
 
 		arr = {bg, b, row, col, oper};
 
 		if(db_arr[bg_b][0] == 0)begin
 			delay = extra_delay + TRCD;
-			$display("otha");
 		end else if (db_arr[bg_b][0] == -1)begin
 		    if(db_arr[bg_b][2] != row)	begin 		//ROW number mismatch
 			if(db_arr[bg_b][5] == oper && oper[0] == 0) // R --> R || IF --> IF || R --> IF || IF --> R
-				delay = extra_delay + TRTP + TRP + TRCD;
+				delay = TRTP + TRP + TRCD;
 
 			else if(db_arr[bg_b][5] == oper && oper[0] == 1) // W --> W
-				delay = extra_delay + TWR + TRP + TRCD;
+				delay = TWR + TRP + TRCD;
 
 			else if(db_arr[bg_b][5] == 1 && oper[0] == 0) 	// W --> R || W --> IF
-				delay = extra_delay + TWR + TRP + TRCD;
+				delay = TWR + TRP + TRCD;
 
 			else if(db_arr[bg_b][5][0] == 0 && oper[0] == 1) 	// R --> W || IF --> W
-				delay = extra_delay + TRTP + TRP + TRCD;
+				delay = TRTP + TRP + TRCD;
 		    end else if(db_arr[bg_b][2] == row && db_arr[bg_b][3] != col) begin // COL number mismatch
-			delay = extra_delay + TCCD_L;
+			if(db_arr[bg_b][5] == 1 && oper[0] == 0) 	// W --> R || W --> IF
+				delay = TWTR_L;
+			else
+				delay = TCCD_L;
 		    end else if(db_arr[bg_b][2] == row && db_arr[bg_b][3] == col) begin 
-			delay = extra_delay + TCCD_L;
+			if(db_arr[bg_b][5] == 1 && oper[0] == 0) 	// W --> R || W --> IF
+				delay = TWTR_L;
+			else
+				delay = TCCD_L;
 		    end
 		end 
 		$display("extra_delay = %0d, delay = %0d", extra_delay, delay);
@@ -402,7 +414,7 @@ module mem_ctrl;
 
 
   initial begin
-	#50000 $finish; 
+	#100000 $finish; 
   end
 
   //always @(sim_time) begin
