@@ -22,6 +22,28 @@ module mem_ctrl;
 
   int removed;
   int f_end;
+  int first_ip_in_q_serviced;
+
+  int TRC	= 2*76;
+  int TRAS	= 2*52;
+  int TRRD_L	= 2*6;
+  int TRRD_S	= 2*4;
+  int TRP	= 2*24;
+  //int TRFC	= 2*350ns;
+  int CWL	= 2*20;
+  int TCAS	= 2*24;
+  int TRCD	= 2*24;
+  int TWR	= 2*20;
+  int TRTP	= 2*12;
+  int TCCD_L	= 2*8;
+  int TCCD_S	= 2*4;
+  int TBURST	= 2*4;
+  int TWTR_L	= 2*12;
+  int TWTR_S	= 2*4;
+  //int REFI	= 2*7.8𝛍s;
+
+
+
 
   always begin
 	#1 sim_time++;
@@ -85,84 +107,69 @@ module mem_ctrl;
   end
 
 
-  int db_arr[16][5]; //R C valid_time
+  int db_arr[16][5]; 
+  int arr[5]; 
 
-  function int calc_time(int BG, int B, int BG_B, int R, int oper);
-	if(db_arr[BG_B][0] == 1)begin
-		if(db_arr[BG_B][2] == R)
-			return(100); //RD
-		else
-			return(100); //PRE + ACT + RD
-	end else begin
-		return (100); 	//ACT + RD
+	//db_arr[BG_B][1] = calc_time(BG, B, BG_B, local_addr[32:18], local_addr[17:10], local_oper) ; // BG 
+
+  // VALID
+  // 0  Has not been accessed at all
+  // 1  Currently in progress
+  //-1  Has been accessed before, but currently not active (Open page)
+
+  function int calc_time(int BG, int B, int BG_B, int row, int col, int oper, int first);
+
+	if(first == 0) begin
+		arr = {BG, B, row, col, oper};
+		$display("arr = %p", arr);
+		return (TRCD);
+	end
+	else begin
+		//if(db_arr[BG_B][0] == 0)begin
+		  if(arr[0] != BG)begin
+			arr = {BG, B, row, col, oper};
+			return(TRCD + TRRD_S + TCCD_S);
+		  end else if (arr[0] == BG && arr[1] != B)begin
+			arr = {BG, B, row, col, oper};
+			return(TRCD + TRRD_L + TCCD_L);
+		  end else if (arr[0] == BG && arr[1] == B && arr[2] != row)begin
+			arr = {BG, B, row, col, oper};
+			return(TRTP + TRP + TRCD + TRRD_L + TCCD_L);	
+		  end else if (arr[0] == BG && arr[1] == B && arr[2] == row && arr[3] != col)begin 
+			arr = {BG, B, row, col, oper};
+			return(TCCD_L);
+		  end else if (arr[0] == BG && arr[1] == B && arr[2] == row && arr[3] == col)begin
+			arr = {BG, B, row, col, oper};
+			return(2);
+		  end
+		//end else if(db_arr[BG_B][0] == -1)begin
+
+		//end
+
+	//		if(db_arr[BG_B][2] == row)
+	//			return(100); //RD
+	//		else
+	//			return(100); //PRE + ACT + RD
+	//	end else begin
+	//		return (100); 	//ACT + RD
+	//	end
 	end
   endfunction
 
-
-
-  /*task automatic calc_valid_time(int local_oper, bit [32:0] local_addr, int q_ref);
-
-     int flag = 0;
-     bit [1:0] BG, B;
-     bit [3:0] BG_B; 				
-     BG = local_addr[7:6];
-     B  = local_addr[9:8];
-     BG_B = {BG,B};				//BG_B = '{local_addr[7:6],local_addr[9:8]}; 	
-
-     //$display("BEFORE FLAG @%0d BG=%0d, B=%0d",sim_time, BG, B);
-
-     if(db_arr[BG_B][0] == 1)begin
-	//$display("BEFORE WAIT @%0d BG=%0d, B=%0d",sim_time, BG, B);
-	wait(db_arr[BG_B][0]==0);
-	//$display("AFTER WAIT @%0d BG=%0d, B=%0d",sim_time, BG, B);
-	flag = 1;
-     end else begin
-	flag = 1;
-     end
-    
-     //$display("AFTER FLAG @%0d BG=%0d, B=%0d",sim_time, BG, B);
-
-     if(flag == 1)begin
-	db_arr[BG_B][1] = calc_time(BG, B, BG_B, db_arr[BG_B][1], local_oper) ;
-	db_arr[BG_B][0] = 1 ;			//VALID = 1
-	db_arr[BG_B][2] = local_addr[32:18];	//ROW number
-	db_arr[BG_B][3] = local_addr[17:10];	//COL number
-	db_arr[BG_B][4] = q_ref;	//Q position
-     end
-  endtask*/
-
-
   task automatic calc_valid_time(int local_oper, bit [32:0] local_addr, int q_ref);
 
-     int flag = 1;
      bit [1:0] BG, B;
      bit [3:0] BG_B; 				
      BG = local_addr[7:6];
      B  = local_addr[9:8];
      BG_B = {BG,B};				//BG_B = '{local_addr[7:6],local_addr[9:8]}; 	
 
-     //$display("BEFORE FLAG @%0d BG=%0d, B=%0d",sim_time, BG, B);
-
-     //if(db_arr[BG_B][0] == 1)begin
-     //   //$display("BEFORE WAIT @%0d BG=%0d, B=%0d",sim_time, BG, B);
-     //   wait(db_arr[BG_B][0]==0);
-     //   //$display("AFTER WAIT @%0d BG=%0d, B=%0d",sim_time, BG, B);
-     //   flag = 1;
-     //end else begin
-     //   flag = 1;
-     //end
-   
-
-     //if (db_arr[BG_B][0]==0) flag=1; 
-     //$display("AFTER FLAG @%0d BG=%0d, B=%0d",sim_time, BG, B);
-
-     if(flag == 1)begin
-	db_arr[BG_B][1] = calc_time(BG, B, BG_B, db_arr[BG_B][1], local_oper) ;
-	db_arr[BG_B][0] = 1 ;			//VALID = 1
-	db_arr[BG_B][2] = local_addr[32:18];	//ROW number
-	db_arr[BG_B][3] = local_addr[17:10];	//COL number
-	db_arr[BG_B][4] = q_ref;	//Q position
-     end
+     db_arr[BG_B][1] = calc_time(BG, B, BG_B, local_addr[32:18], local_addr[17:10], local_oper, first_ip_in_q_serviced) ; // BG 
+     db_arr[BG_B][0] = 1 ;			//VALID = 1
+     db_arr[BG_B][2] = local_addr[32:18];	//ROW number
+     db_arr[BG_B][3] = local_addr[17:10];	//COL number
+     db_arr[BG_B][4] = q_ref;	//Q position
+     first_ip_in_q_serviced = 1;
   endtask
 
 
@@ -171,7 +178,6 @@ module mem_ctrl;
   //      repeat(i) begin
   //      	q_mc.push_back(q_ip_time_next.pop_front());
   //      	$display("debug5: reached here");
-  //      	//calc_valid_time(q_ip_oper_next.pop_front(), q_ip_addr_next.pop_front());
   //      	q_remove.push_back(sim_time);
   //      end
   //      if (debug_en)
@@ -180,7 +186,7 @@ module mem_ctrl;
   //endtask
 
 
-  task add_to_pending_q(int i); 
+  task add_to_pending_q(int i);
         //longint unsigned temp_time;
 	$display("q_ip_time_next = %p", q_ip_time_next);
 	repeat(i) begin
@@ -247,7 +253,7 @@ module mem_ctrl;
 
   always@(sim_time) begin
 	for(int i=0; i<q_mc.size(); i++)begin
-	    if( db_arr[{q_mc_addr[i][7:6],q_mc_addr[i][9:8]}][0] == 0)begin		//Checking for VALID set
+	    if( db_arr[{q_mc_addr[i][7:6],q_mc_addr[i][9:8]}][0] == 0 || db_arr[{q_mc_addr[i][7:6],q_mc_addr[i][9:8]}][0] == -1)begin		//Checking for VALID set
 	        calc_valid_time(q_mc_oper[i], q_mc_addr[i], i);
 		break;
 	    end
