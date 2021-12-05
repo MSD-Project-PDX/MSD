@@ -1,17 +1,30 @@
+ip_file=$1
 > /u/pmanthu/address1/output_file.txt
-count=0
+count=1
 IFS=$'\n'
 
 #generating binary code from bankgroup,bank,row and columns
-for line in `cat /u/pmanthu/address1/input_file.txt`
+for line in `cat /u/pmanthu/address1/main/${ip_file}.txt`
 do
+	echo "Reading $count line"
 	bank_group=`echo $line |cut -d$'\t' -f1`
 	bank=`echo $line |cut -d$'\t' -f2`
 	row=`echo $line |cut -d$'\t' -f3`
 	col=`echo $line |cut -d$'\t' -f4`
-	low_col=`echo $line |cut -d$'\t' -f5`
-	byte_sel=`echo $line |cut -d$'\t' -f6`
-	echo -n "000" >> /u/pmanthu/address1/output_file.txt
+	#low_col=`echo $line |cut -d$'\t' -f5`
+	#byte_sel=`echo $line |cut -d$'\t' -f6`
+	low_col=0
+	byte_Sel=0
+	oper=`echo $line |cut -d$'\t' -f5`
+	time=`echo $line |cut -d$'\t' -f6`
+	if [ $oper == "Read" ];then
+	oper_in=0
+	elif [ $oper == "Write" ];then
+	oper_in=1;
+	else
+	oper_in=2
+	fi
+	echo -n "$time $oper_in 0x|000" >> /u/pmanthu/address1/output_file.txt
 	row_to_bin=({0..1}{0..1}{0..1}{0..1}{0..1}{0..1}{0..1}{0..1}{0..1}{0..1}{0..1}{0..1}{0..1}{0..1}{0..1})
 	echo -n ${row_to_bin[$row]} >> /u/pmanthu/address1/output_file.txt
 	col_to_bin=({0..1}{0..1}{0..1}{0..1}{0..1}{0..1}{0..1}{0..1})
@@ -25,12 +38,20 @@ do
 	bytesel_to_bin=({0..1}{0..1}{0..1})
 	echo -n ${bytesel_to_bin[$byte_sel]} >> /u/pmanthu/address1/output_file.txt
 	echo "" >> /u/pmanthu/address1/output_file.txt
-((count++))
+	((count++))
 done
 
 #generating hex values from binary code
-for line in `cat /u/pmanthu/address1/output_file.txt`
+> /u/pmanthu/address/output_preval.txt
+> /u/pmanthu/address/output.txt
+> /u/pmanthu/address/output_final.txt
+IFS=$'\n'
+
+for line1 in `cat /u/pmanthu/address1/output_file.txt`
 do
+pre_val=`echo $line1|cut -d'|' -f1`
+echo "$pre_val" >> /u/pmanthu/address/output_preval.txt
+line=$`echo $line1|cut -d'|' -f2`
 count=0
         for bit in `echo $line |sed -e 's/\(.\)/\1\n/g'`
         do
@@ -47,6 +68,6 @@ count=0
         done
         echo "" >> /u/pmanthu/address/output.txt
 done
-
-cat /u/pmanthu/address/output.txt|sed 's/^/0x/g'
+paste -d'|' /u/pmanthu/address/output_preval.txt /u/pmanthu/address/output.txt > /u/pmanthu/address/output_final.txt
+cat /u/pmanthu/address/output_final.txt|sed 's/|//g' > /u/pmanthu/address1/main/${ip_file}_output.txt
 
