@@ -68,19 +68,21 @@ module mem_ctrl;
   end
 
 
-  int flag_err;
+  //int flag_err;
+  int otha_podu;
 
   initial begin
 	ip = $fopen(ip_file, "r");
 
 	//while(!$feof(ip)) begin
 	while(f_end==0) begin
-		$fscanf(ip, "%d %d %h", t, inst, addr);
+	//do begin
+		if($fscanf(ip, "%d %d %h", t, inst, addr) == 3)begin
 		if(t==q_ip_time_next[0] || first_ip==1)begin
 			q_ip_time_next.push_back(t);
 			q_ip_oper_next.push_back(inst);
 			q_ip_addr_next.push_back(addr);
-			flag_err = 1;
+			//flag_err = 1;
 		end else begin
                     size_ip_q = q_ip_time_next.size();
 		    wait(!q_pending_full);
@@ -92,13 +94,10 @@ module mem_ctrl;
 		    q_ip_oper_next.push_back(inst);
 		    q_ip_addr_next.push_back(addr);
 		end
+		end
 		first_ip=0;
 		f_end = $feof(ip);
-		if(f_end == 1 && flag_err==0)begin
-			q_ip_time_next.delete(q_ip_time_next.size()-1);
-			q_ip_oper_next.delete(q_ip_oper_next.size()-1);
-			q_ip_addr_next.delete(q_ip_addr_next.size()-1);
-		end
+		if(f_end) break;
 	end
 	//last set of inputs
         size_ip_q = q_ip_time_next.size();
@@ -106,8 +105,7 @@ module mem_ctrl;
 	last_ip = 1;
   end
 
-
-  int db_arr[16][5]; 
+  int db_arr[16][6]; 
   int arr[5]; 
 
 	//db_arr[BG_B][1] = calc_time(BG, B, BG_B, local_addr[32:18], local_addr[17:10], local_oper) ; // BG 
@@ -117,44 +115,142 @@ module mem_ctrl;
   // 1  Currently in progress
   //-1  Has been accessed before, but currently not active (Open page)
 
-  function int calc_time(int BG, int B, int BG_B, int row, int col, int oper, int first);
+  int extra_delay = 0;
+  int delay;
+
+  function int calc_time(int bg, int b, int bg_b, int row, int col, int oper, int first);
+
+	extra_delay = 0;
 
 	if(first == 0) begin
-		arr = {BG, B, row, col, oper};
-		$display("arr = %p", arr);
-		return (TRCD);
-	end
-	else begin
-		//if(db_arr[BG_B][0] == 0)begin
-		  if(arr[0] != BG)begin
-			arr = {BG, B, row, col, oper};
-			return(TRCD + TRRD_S + TCCD_S);
-		  end else if (arr[0] == BG && arr[1] != B)begin
-			arr = {BG, B, row, col, oper};
-			return(TRCD + TRRD_L + TCCD_L);
-		  end else if (arr[0] == BG && arr[1] == B && arr[2] != row)begin
-			arr = {BG, B, row, col, oper};
-			return(TRTP + TRP + TRCD + TRRD_L + TCCD_L);	
-		  end else if (arr[0] == BG && arr[1] == B && arr[2] == row && arr[3] != col)begin 
-			arr = {BG, B, row, col, oper};
-			return(TCCD_L);
-		  end else if (arr[0] == BG && arr[1] == B && arr[2] == row && arr[3] == col)begin
-			arr = {BG, B, row, col, oper};
-			return(2);
-		  end
-		//end else if(db_arr[BG_B][0] == -1)begin
+		arr = {bg, b, row, col, oper};
+		$display("delay = %0d", TRCD);
+		return (TRCD);		//48
+	end else begin
+		if(arr[0] != bg) extra_delay  = 2*4;
+		else
+		  if(arr[1] != b) extra_delay = 2*6;
 
-		//end
+		arr = {bg, b, row, col, oper};
 
-	//		if(db_arr[BG_B][2] == row)
-	//			return(100); //RD
-	//		else
-	//			return(100); //PRE + ACT + RD
-	//	end else begin
-	//		return (100); 	//ACT + RD
-	//	end
+		if(db_arr[bg_b][0] == 0)begin
+			delay = extra_delay + TRCD;
+			$display("otha");
+		end else if (db_arr[bg_b][0] == -1)begin
+		    if(db_arr[bg_b][2] != row)	begin 		//ROW number mismatch
+			if(db_arr[bg_b][5] == oper && oper[0] == 0) // R --> R || IF --> IF || R --> IF || IF --> R
+				delay = extra_delay + TRTP + TRP + TRCD;
+
+			else if(db_arr[bg_b][5] == oper && oper[0] == 1) // W --> W
+				delay = extra_delay + TWR + TRP + TRCD;
+
+			else if(db_arr[bg_b][5] == 1 && oper[0] == 0) 	// W --> R || W --> IF
+				delay = extra_delay + TWR + TRP + TRCD;
+
+			else if(db_arr[bg_b][5][0] == 0 && oper[0] == 1) 	// R --> W || IF --> W
+				delay = extra_delay + TRTP + TRP + TRCD;
+		    end else if(db_arr[bg_b][2] == row && db_arr[bg_b][3] != col) begin // COL number mismatch
+			delay = extra_delay + TCCD_L;
+		    end else if(db_arr[bg_b][2] == row && db_arr[bg_b][3] == col) begin 
+			delay = extra_delay + TCCD_L;
+		    end
+		end 
+		$display("extra_delay = %0d, delay = %0d", extra_delay, delay);
+		return(delay);
 	end
   endfunction
+  //function int calc_time(int bg, int b, int bg_b, int row, int col, int oper, int first);
+  //      return(100);
+  //endfunction
+	/*	//if(db_arr[bg_b][0] == 0)begin
+		arr = {bg, b, row, col, oper};
+		if(arr[4][0] == 0 && oper[0] == 0) // (R --> R || R --> IF || IF --> IF || IF --> R)
+		  if(arr[0] != bg)begin
+			if(db_arr[bg_b][0] == -1)
+				return(TRP + TRTP + TRCD + TRRD_S + TCCD_S);
+			else if(db_arr[bg_b][0] == 0)
+				return(TRCD + TRRD_S + TCCD_S);			//48+8+8 = 64
+		  end else if (arr[0] == bg && arr[1] != b)begin
+			if(db_arr[bg_b][0] == -1)
+				return(TRP + TRTP + TRCD + TRRD_L + TCCD_L);
+			else if(db_arr[bg_b][0] == 0)
+				return(TRCD + TRRD_L + TCCD_L);			//48+12+16 = 76
+		  end else if (arr[0] == bg && arr[1] == b && arr[2] != row)begin
+			if(db_arr[bg_b][0] == -1)
+				return(TRTP + TRP + TRCD + TRRD_L + TCCD_L);
+			else if(db_arr[bg_b][0] == 0)
+				return(TRTP + TRP + TRCD + TRRD_L + TCCD_L); 	//24+48+48+12+16 = 148	//DEAD
+		  end else if (arr[0] == bg && arr[1] == b && arr[2] == row && arr[3] != col)begin	//DEAD 
+			if(db_arr[bg_b][0] == -1)
+				return(TCCD_L);
+			else if(db_arr[bg_b][0] == 0)
+				return(TCCD_L); 				//16
+		  end else if (arr[0] == bg && arr[1] == b && arr[2] == row && arr[3] == col)begin
+			if(db_arr[bg_b][0] == -1)
+				return(2);
+			else if(db_arr[bg_b][0] == 0)
+				return(2);					//2
+		  end
+		end 
+
+		else if (arr[4] == 1 && oper == 1)begin 		// W --> W
+		  if(arr[0] != bg)begin
+			if(db_arr[bg_b][0] == -1)
+				return();
+			else if(db_arr[bg_b][0] == 0)
+				return(TRCD + TRRD_S + TCCD_S);			//48+8+8 = 64
+		  end else if (arr[0] == bg && arr[1] != b)begin
+			if(db_arr[bg_b][0] == -1)
+				return();
+			else if(db_arr[bg_b][0] == 0)
+				return(TRCD + TRRD_L + TCCD_L);			//48+12+16 = 76
+		  end else if (arr[0] == bg && arr[1] == b && arr[2] != row)begin
+			if(db_arr[bg_b][0] == -1)
+				return();
+			else if(db_arr[bg_b][0] == 0)
+				return(TRTP + TRP + TRCD + TRRD_L + TCCD_L); 	//24+48+48+12+16 = 148
+		  end else if (arr[0] == bg && arr[1] == b && arr[2] == row && arr[3] != col)begin 
+			if(db_arr[bg_b][0] == -1)
+				return();
+			else if(db_arr[bg_b][0] == 0)
+				return(TCCD_L); 				//16
+		  end else if (arr[0] == bg && arr[1] == b && arr[2] == row && arr[3] == col)begin
+			if(db_arr[bg_b][0] == -1)
+				return();
+			else if(db_arr[bg_b][0] == 0)
+				return(2);					//2
+		  end
+		end
+
+		else if (arr[4] == 1 && oper[0] == 0) begin		// W --> R/IF
+		  if(arr[0] != bg)begin
+			if(db_arr[bg_b][0] == -1)
+				return();
+			else if(db_arr[bg_b][0] == 0)
+				return(TRCD + TRRD_S + TCCD_S + TWTR_S);			//48+8+8 = 64
+		  end else if (arr[0] == bg && arr[1] != b)begin
+			if(db_arr[bg_b][0] == -1)
+				return();
+			else if(db_arr[bg_b][0] == 0)
+				return(TRCD + TRRD_L + TCCD_L + TWTR_L);			//48+12+16 = 76
+		  end else if (arr[0] == bg && arr[1] == b && arr[2] != row)begin
+			if(db_arr[bg_b][0] == -1)
+				return();
+			else if(db_arr[bg_b][0] == 0)
+				return(TRTP + TRP + TRCD + TRRD_L + TCCD_L); 	//24+48+48+12+16 = 148
+		  end else if (arr[0] == bg && arr[1] == b && arr[2] == row && arr[3] != col)begin 
+			if(db_arr[bg_b][0] == -1)
+				return();
+			else if(db_arr[bg_b][0] == 0)
+				return(TCCD_L); 				//16
+		  end else if (arr[0] == bg && arr[1] == b && arr[2] == row && arr[3] == col)begin
+			if(db_arr[bg_b][0] == -1)
+				return();
+			else if(db_arr[bg_b][0] == 0)
+				return(2);					//2
+		  end
+		end*/
+
 
   task automatic calc_valid_time(int local_oper, bit [32:0] local_addr, int q_ref);
 
@@ -163,12 +259,13 @@ module mem_ctrl;
      BG = local_addr[7:6];
      B  = local_addr[9:8];
      BG_B = {BG,B};				//BG_B = '{local_addr[7:6],local_addr[9:8]}; 	
-
+     $display("Start scheduling @%0d for %h : BG=%0d B=%0d R=%0d C=%0d oper=%0d",sim_time,local_addr, BG, B, local_addr[32:18], local_addr[17:10], local_oper);
      db_arr[BG_B][1] = calc_time(BG, B, BG_B, local_addr[32:18], local_addr[17:10], local_oper, first_ip_in_q_serviced) ; // BG 
      db_arr[BG_B][0] = 1 ;			//VALID = 1
      db_arr[BG_B][2] = local_addr[32:18];	//ROW number
      db_arr[BG_B][3] = local_addr[17:10];	//COL number
-     db_arr[BG_B][4] = q_ref;	//Q position
+     db_arr[BG_B][4] = q_ref;			//Q position
+     db_arr[BG_B][5] = local_oper;		//operation 0-R; 1-W; 2-IF
      first_ip_in_q_serviced = 1;
   endtask
 
@@ -189,6 +286,7 @@ module mem_ctrl;
   task add_to_pending_q(int i);
         //longint unsigned temp_time;
 	$display("q_ip_time_next = %p", q_ip_time_next);
+	$display("q_ip_addr_next = %p", q_ip_addr_next);
 	repeat(i) begin
 		q_pending_time.push_back(q_ip_time_next.pop_front());
 		q_pending_oper.push_back(q_ip_oper_next.pop_front());
@@ -227,8 +325,18 @@ module mem_ctrl;
 	end
      end
   end
+
+  int bgb; 
+
+  //ADAPTIVE SCHEDULING
+  //always@(sim_time)begin
+  //      for(int i=0; i<q_pending_addr.size(); i++)begin
+  //      	bgb = q_pending_addr[i][]
+  //      	if(q_pending_addr[i][])
+  //      end
+  //end 
+
  
-  
   bit add_flag;
   //MC Queue implemenation (Pending Q ---> MC Q)
   always@(sim_time)begin
@@ -253,7 +361,7 @@ module mem_ctrl;
 
   always@(sim_time) begin
 	for(int i=0; i<q_mc.size(); i++)begin
-	    if( db_arr[{q_mc_addr[i][7:6],q_mc_addr[i][9:8]}][0] == 0 || db_arr[{q_mc_addr[i][7:6],q_mc_addr[i][9:8]}][0] == -1)begin		//Checking for VALID set
+	    if( db_arr[{q_mc_addr[i][7:6],q_mc_addr[i][9:8]}][0] == 0 || db_arr[{q_mc_addr[i][7:6],q_mc_addr[i][9:8]}][0] == -1)begin		//Checking for VALID not set
 	        calc_valid_time(q_mc_oper[i], q_mc_addr[i], i);
 		break;
 	    end
@@ -265,7 +373,7 @@ module mem_ctrl;
 	  if(db_arr[i][0]==1)begin
 	    if(db_arr[i][4] == a) begin
 		db_arr[i][4] =-1;
-	    	db_arr[i][0] = 0;
+	    	db_arr[i][0] = -1;
 	    end
 
 	    if(db_arr[i][4] > a && db_arr[i][4] >0)
@@ -277,7 +385,7 @@ module mem_ctrl;
   //REMOVE FROM MC Q
   always@(sim_time) begin
 	for(int i=0; i<16; i++)begin
-	    if(db_arr[i][0] == 1 && db_arr[i][1] == 1) begin
+	    if(db_arr[i][0] == 1 && db_arr[i][1] == 0) begin
 		q_mc.delete(db_arr[i][4]);
 		q_mc_oper.delete(db_arr[i][4]);
 		q_mc_addr.delete(db_arr[i][4]);
