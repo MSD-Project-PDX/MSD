@@ -1,4 +1,4 @@
-paste -d'|' /u/pmanthu/address1/main/file1_output.txt /u/pmanthu/address1/main/file2_output.txt /u/pmanthu/address1/main/file3_output.txt > /u/pmanthu/address1/main/file_output_final.txt
+paste -d'|' /u/pmanthu/address1/main/request1_output.txt /u/pmanthu/address1/main/request2_output.txt /u/pmanthu/address1/main/request3_output.txt > /u/pmanthu/address1/main/file_output_final.txt
 IFS=$'\n'
 count=1
 for line in `cat /u/pmanthu/address1/main/file_output_final.txt`

@@ -51,7 +51,7 @@ for line1 in `cat /u/pmanthu/address1/output_file.txt`
 do
 pre_val=`echo $line1|cut -d'|' -f1`
 echo "$pre_val" >> /u/pmanthu/address/output_preval.txt
-line=$`echo $line1|cut -d'|' -f2`
+line=`echo $line1|cut -d'|' -f2`
 count=0
         for bit in `echo $line |sed -e 's/\(.\)/\1\n/g'`
         do
@@ -70,3 +70,4 @@ count=0
 done
 paste -d'|' /u/pmanthu/address/output_preval.txt /u/pmanthu/address/output.txt > /u/pmanthu/address/output_final.txt
 cat /u/pmanthu/address/output_final.txt|sed 's/|//g' > /u/pmanthu/address1/main/${ip_file}_output.txt
+
