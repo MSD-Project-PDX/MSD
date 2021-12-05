@@ -1,28 +1,28 @@
 module mem_ctrl;
   int ip;
-  longint t, inst, addr;
+  longint unsigned t;
+  int inst;
+  bit [32:0] addr;
   longint unsigned q_mc[$:15];
-  longint unsigned q_mc_oper[$:15];
-  longint unsigned q_mc_addr[$:15];
+  int q_mc_oper[$:15];
+  bit [32:0] q_mc_addr[$:15];
   longint unsigned q_pending_time[$:15];
-  longint unsigned q_pending_oper[$:15];
-  longint unsigned q_pending_addr[$:15];
-  longint unsigned q_remove[$:15];
-  longint q_ip_time_next [$:3];
+  int q_pending_oper[$:15];
+  bit [32:0] q_pending_addr[$:15];
+  longint unsigned q_ip_time_next [$:3];
   int q_ip_oper_next [$:3];
-  int q_ip_addr_next [$:3];
+  bit [32:0] q_ip_addr_next [$:3];
 
   bit first_ip=1, last_ip=0;
   int size_ip_q;
   int size_ip_q_copy;
-  //int size_q_pending;
   longint sim_time = -1;
   bit q_mc_full;
   bit q_pending_full;
 
-  int removed;
   int f_end;
   int first_ip_in_q_serviced;
+  longint last_req_time;
 
   int TRC	= 2*76;
   int TRAS	= 2*52;
@@ -68,21 +68,16 @@ module mem_ctrl;
   end
 
 
-  //int flag_err;
-  int otha_podu;
 
   initial begin
 	ip = $fopen(ip_file, "r");
 
-	//while(!$feof(ip)) begin
 	while(f_end==0) begin
-	//do begin
 		if($fscanf(ip, "%d %d %h", t, inst, addr) == 3)begin
 		if(t==q_ip_time_next[0] || first_ip==1)begin
 			q_ip_time_next.push_back(t);
 			q_ip_oper_next.push_back(inst);
 			q_ip_addr_next.push_back(addr);
-			//flag_err = 1;
 		end else begin
                     size_ip_q = q_ip_time_next.size();
 		    wait(!q_pending_full);
@@ -101,38 +96,76 @@ module mem_ctrl;
 	end
 	//last set of inputs
         size_ip_q = q_ip_time_next.size();
-	wait(!q_pending_full);
 	last_ip = 1;
+	last_req_time = q_ip_time_next[0];
   end
 
   int db_arr[16][6]; 
   int arr[5]; 
 
-	//db_arr[BG_B][1] = calc_time(BG, B, BG_B, local_addr[32:18], local_addr[17:10], local_oper) ; // BG 
 
   // VALID
   // 0  Has not been accessed at all
   // 1  Currently in progress
   //-1  Has been accessed before, but currently not active (Open page)
 
-
-  //task start_print_operation(int );
-  //      
-  //endtask
-
+  task automatic output_computation(int t, int bank_g, int bank, int r, int c, int operation);
+	if(t == 48)begin
+		$display("%0d \tACT \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r);
+		#48
+		if(operation[0] == 0)
+			$display("%0d \tRD \t%0h \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r, c);
+		else if(operation == 1)
+			$display("%0d \tWR \t%0h \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r, c);
+	end else if(t == 56) begin
+		#8
+		$display("%0d \tACT \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r);
+		#48
+		if(operation[0] == 0)
+			$display("%0d \tRD \t%0h \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r, c);
+		else if(operation == 1)
+			$display("%0d \tWR \t%0h \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r, c);
+	end else if(t == 60)begin
+		#12
+		$display("%0d \tACT \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r);
+		#48
+		if(operation[0] == 0)
+			$display("%0d \tRD \t%0h \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r, c);
+		else if(operation == 1)
+			$display("%0d \tWR \t%0h \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r, c);
+	end else if(t == 120)begin
+		#24
+		$display("%0d \tPRE \t%0h \t%0h", sim_time, bank_g, bank);
+		#48
+		$display("%0d \tACT \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r);
+		#48
+		$display("%0d \tRD \t%0h \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r, c);
+	end else if(t == 136)begin
+		#40
+		$display("%0d \tPRE \t%0h \t%0h", sim_time, bank_g, bank);
+		#48
+		$display("%0d \tACT \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r);
+		#48
+		$display("%0d \tWR \t%0h \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r, c);
+	end else if(t == 24)begin
+		#24
+		$display("%0d \tRD \t%0h \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r, c);
+	end else if(t == 16)begin
+		#16
+		$display("%0d \tRD \t%0h \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r, c);
+	end
+  endtask
 
   int extra_delay = 0;
   int delay;
 
-  function int calc_time(int bg, int b, int bg_b, int row, int col, int oper, int first);
+  task calc_time(int bg, int b, int bg_b, int row, int col, int oper, int first, output int t);
 
 	extra_delay = 0;
 
 	if(first == 0) begin
 		arr = {bg, b, row, col, oper};
-		$display("delay = %0d", TRCD);
-		//start_print_operation(.trcd(TRCD));
-		return (TRCD);		//48
+		t = TRCD;
 	end else begin
 		if(arr[0] != bg) extra_delay  = TRRD_S;
 		else
@@ -167,112 +200,24 @@ module mem_ctrl;
 				delay = TCCD_L;
 		    end
 		end 
-		$display("extra_delay = %0d, delay = %0d", extra_delay, delay);
-		return(delay);
 	end
-  endfunction
-  //function int calc_time(int bg, int b, int bg_b, int row, int col, int oper, int first);
-  //      return(100);
-  //endfunction
-	/*	//if(db_arr[bg_b][0] == 0)begin
-		arr = {bg, b, row, col, oper};
-		if(arr[4][0] == 0 && oper[0] == 0) // (R --> R || R --> IF || IF --> IF || IF --> R)
-		  if(arr[0] != bg)begin
-			if(db_arr[bg_b][0] == -1)
-				return(TRP + TRTP + TRCD + TRRD_S + TCCD_S);
-			else if(db_arr[bg_b][0] == 0)
-				return(TRCD + TRRD_S + TCCD_S);			//48+8+8 = 64
-		  end else if (arr[0] == bg && arr[1] != b)begin
-			if(db_arr[bg_b][0] == -1)
-				return(TRP + TRTP + TRCD + TRRD_L + TCCD_L);
-			else if(db_arr[bg_b][0] == 0)
-				return(TRCD + TRRD_L + TCCD_L);			//48+12+16 = 76
-		  end else if (arr[0] == bg && arr[1] == b && arr[2] != row)begin
-			if(db_arr[bg_b][0] == -1)
-				return(TRTP + TRP + TRCD + TRRD_L + TCCD_L);
-			else if(db_arr[bg_b][0] == 0)
-				return(TRTP + TRP + TRCD + TRRD_L + TCCD_L); 	//24+48+48+12+16 = 148	//DEAD
-		  end else if (arr[0] == bg && arr[1] == b && arr[2] == row && arr[3] != col)begin	//DEAD 
-			if(db_arr[bg_b][0] == -1)
-				return(TCCD_L);
-			else if(db_arr[bg_b][0] == 0)
-				return(TCCD_L); 				//16
-		  end else if (arr[0] == bg && arr[1] == b && arr[2] == row && arr[3] == col)begin
-			if(db_arr[bg_b][0] == -1)
-				return(2);
-			else if(db_arr[bg_b][0] == 0)
-				return(2);					//2
-		  end
-		end 
-
-		else if (arr[4] == 1 && oper == 1)begin 		// W --> W
-		  if(arr[0] != bg)begin
-			if(db_arr[bg_b][0] == -1)
-				return();
-			else if(db_arr[bg_b][0] == 0)
-				return(TRCD + TRRD_S + TCCD_S);			//48+8+8 = 64
-		  end else if (arr[0] == bg && arr[1] != b)begin
-			if(db_arr[bg_b][0] == -1)
-				return();
-			else if(db_arr[bg_b][0] == 0)
-				return(TRCD + TRRD_L + TCCD_L);			//48+12+16 = 76
-		  end else if (arr[0] == bg && arr[1] == b && arr[2] != row)begin
-			if(db_arr[bg_b][0] == -1)
-				return();
-			else if(db_arr[bg_b][0] == 0)
-				return(TRTP + TRP + TRCD + TRRD_L + TCCD_L); 	//24+48+48+12+16 = 148
-		  end else if (arr[0] == bg && arr[1] == b && arr[2] == row && arr[3] != col)begin 
-			if(db_arr[bg_b][0] == -1)
-				return();
-			else if(db_arr[bg_b][0] == 0)
-				return(TCCD_L); 				//16
-		  end else if (arr[0] == bg && arr[1] == b && arr[2] == row && arr[3] == col)begin
-			if(db_arr[bg_b][0] == -1)
-				return();
-			else if(db_arr[bg_b][0] == 0)
-				return(2);					//2
-		  end
-		end
-
-		else if (arr[4] == 1 && oper[0] == 0) begin		// W --> R/IF
-		  if(arr[0] != bg)begin
-			if(db_arr[bg_b][0] == -1)
-				return();
-			else if(db_arr[bg_b][0] == 0)
-				return(TRCD + TRRD_S + TCCD_S + TWTR_S);			//48+8+8 = 64
-		  end else if (arr[0] == bg && arr[1] != b)begin
-			if(db_arr[bg_b][0] == -1)
-				return();
-			else if(db_arr[bg_b][0] == 0)
-				return(TRCD + TRRD_L + TCCD_L + TWTR_L);			//48+12+16 = 76
-		  end else if (arr[0] == bg && arr[1] == b && arr[2] != row)begin
-			if(db_arr[bg_b][0] == -1)
-				return();
-			else if(db_arr[bg_b][0] == 0)
-				return(TRTP + TRP + TRCD + TRRD_L + TCCD_L); 	//24+48+48+12+16 = 148
-		  end else if (arr[0] == bg && arr[1] == b && arr[2] == row && arr[3] != col)begin 
-			if(db_arr[bg_b][0] == -1)
-				return();
-			else if(db_arr[bg_b][0] == 0)
-				return(TCCD_L); 				//16
-		  end else if (arr[0] == bg && arr[1] == b && arr[2] == row && arr[3] == col)begin
-			if(db_arr[bg_b][0] == -1)
-				return();
-			else if(db_arr[bg_b][0] == 0)
-				return(2);					//2
-		  end
-		end*/
-
+	fork
+		output_computation(t, bg, b, row, col, oper);
+	join_none
+  endtask
 
   task automatic calc_valid_time(int local_oper, bit [32:0] local_addr, int q_ref);
 
      bit [1:0] BG, B;
-     bit [3:0] BG_B; 				
+     bit [3:0] BG_B; 
+     int calc_time_op;				
      BG = local_addr[7:6];
      B  = local_addr[9:8];
      BG_B = {BG,B};				//BG_B = '{local_addr[7:6],local_addr[9:8]}; 	
-     $display("Start scheduling @%0d for %h : BG=%0d B=%0d R=%0d C=%0d oper=%0d",sim_time,local_addr, BG, B, local_addr[32:18], local_addr[17:10], local_oper);
-     db_arr[BG_B][1] = calc_time(BG, B, BG_B, local_addr[32:18], local_addr[17:10], local_oper, first_ip_in_q_serviced) ; // BG 
+     if(debug_en)
+       $display("Start scheduling @%0d for %h : BG=%0d B=%0d R=%0d C=%0d oper=%0d",sim_time,local_addr, BG, B, local_addr[32:18], local_addr[17:10], local_oper);
+     calc_time(BG, B, BG_B, local_addr[32:18], local_addr[17:10], local_oper, first_ip_in_q_serviced, calc_time_op) ;
+     db_arr[BG_B][1] = calc_time_op;		 
      db_arr[BG_B][0] = 1 ;			//VALID = 1
      db_arr[BG_B][2] = local_addr[32:18];	//ROW number
      db_arr[BG_B][3] = local_addr[17:10];	//COL number
@@ -282,23 +227,7 @@ module mem_ctrl;
   endtask
 
 
-  //task add_to_mc_q(int i); 
-  //      //longint unsigned temp_time;
-  //      repeat(i) begin
-  //      	q_mc.push_back(q_ip_time_next.pop_front());
-  //      	$display("debug5: reached here");
-  //      	q_remove.push_back(sim_time);
-  //      end
-  //      if (debug_en)
-  //      	$display(">>>>>>>>Adding to queue...");
-  //      display_q;
-  //endtask
-
-
   task add_to_pending_q(int i);
-        //longint unsigned temp_time;
-	$display("q_ip_time_next = %p", q_ip_time_next);
-	$display("q_ip_addr_next = %p", q_ip_addr_next);
 	repeat(i) begin
 		q_pending_time.push_back(q_ip_time_next.pop_front());
 		q_pending_oper.push_back(q_ip_oper_next.pop_front());
@@ -324,8 +253,6 @@ module mem_ctrl;
   endtask
 
 
-
-  
   //Pending queue implementation
   always@(sim_time) begin
      if(q_ip_time_next.size()>0)begin
@@ -336,18 +263,9 @@ module mem_ctrl;
 	    	end
 	end
      end
-  end
+  end 
 
-  int bgb; 
-
-  //ADAPTIVE SCHEDULING
-  //always@(sim_time)begin
-  //      for(int i=0; i<q_pending_addr.size(); i++)begin
-  //      	bgb = q_pending_addr[i][]
-  //      	if(q_pending_addr[i][])
-  //      end
-  //end 
-
+ 
  
   bit add_flag;
   //MC Queue implemenation (Pending Q ---> MC Q)
@@ -401,7 +319,8 @@ module mem_ctrl;
 		q_mc.delete(db_arr[i][4]);
 		q_mc_oper.delete(db_arr[i][4]);
 		q_mc_addr.delete(db_arr[i][4]);
-		$display("REMOVE FROM MC QUEUE @%0d %p",sim_time,q_mc);
+		if(debug_en)
+		  $display("REMOVE FROM MC QUEUE @%0d %p",sim_time,q_mc);
 		update_db(db_arr[i][4]);
 	    end
 	    if(db_arr[i][1] > 0 ) db_arr[i][1]--;
@@ -412,58 +331,76 @@ module mem_ctrl;
         //$monitor("DB_ARR = %p",db_arr);
   end
 
-
-  initial begin
-	#100000 $finish; 
+  always @(sim_time) begin
+	if(sim_time == last_req_time + 10000) begin
+          $display("last_req_time = %d  LAST = %0d",last_req_time, sim_time);
+          $finish; 
+        end
   end
 
-  //always @(sim_time) begin
-  //      if( (last_ip==0 && q_ip_time_next.size()>0) || (last_ip==1 && q_ip_time_next.size()>0) )begin
-  //          if(q_ip_time_next[0] <= sim_time && q_mc.size()<16 && q_mc.size()>0)begin
-  //      	if(q_mc.size() + q_ip_time_next.size() <= 16)begin
-  //      		//add q_ip_time_next all to q_mc
-  //      		size_ip_q = q_ip_time_next.size();
-  //      		add_to_mc_q(size_ip_q);
-  //      	end else begin
-  //      		size_ip_q = 16 - q_mc.size() ;
-  //      		add_to_mc_q(size_ip_q);
-  //      	end
-  //          end else if(q_mc.size() == 0) begin
-  //      	sim_time = q_ip_time_next[0];
-  //      	size_ip_q = q_ip_time_next.size();
-  //      	add_to_mc_q(size_ip_q);
-  //          end
-  //      end else if (last_ip == 1 && q_ip_time_next.size() ==0) begin
-  //      	//finish the simulation after 100 clock cycles
-  //      	//if(sim_time == last + 101) begin
-  //      	if(sim_time == 64'd1000000000000000 + 101) begin
-  //              	$display("Simulation ends here.");
-  //                      $display("Simulation Time = %0d", sim_time);
-  //                      $finish;
-  //              end
-  //      end
-  //end
-
-  //always @ (sim_time) begin
-  //        if(q_remove.size() >0) begin
-  //      	  removed = 0;
-  //                repeat(4)
-  //                if(q_remove[0]+100 == sim_time)begin
-  //      		  removed = 1;
-  //                        //if(debug_en == 1)
-  //                        //        $display("<<< Remove %h from the queue at time %0d", q_mc[0], sim_time);
-  //                        q_mc.pop_front();
-  //                        q_remove.pop_front();
-  //                        //if(debug_en)
-  //                        //        display_q;
-  //                end
-  //      	  if(debug_en)
-  //      	    if(removed) begin
-  //      		$display("<<<<<<<<Removing from the queue..");
-  //      		display_q;
-  //      	    end
-  //        end
-  //end
+//  //ADAPTIVE SCHEDULING
+//  int bgb; 
+//  int k;
+//  int q_adaptive_bgb[$:15];
+//  int q_adaptive_row[$:15];
+//  int q_starvation[$:15];
+//  int flag;
+//  int row_val_1, row_val_2, row_val_3;
+//
+//  longint unsigned time_temp;
+//  int oper_temp;
+//  bit [33:0] addr_temp;
+//
+//
+//  task swap_j_to_i1 (int i, int j);
+//	time_temp = q_pending_time[j];
+//	oper_temp = q_pending_oper[j];
+//	addr_temp = q_pending_addr[j];
+//
+//	q_pending_time.delete(j);
+//	q_pending_oper.delete(j);
+//	q_pending_addr.delete(j);
+//
+//	q_pending_time.insert(i+1,time_temp);
+//	q_pending_oper.insert(i+1,oper_temp);
+//	q_pending_addr.insert(i+1,addr_temp);
+//  endtask
+//
+//  task automatic set_starvation(int k);
+//	int temp;
+//	temp = 
+//	q_starvation
+//  endtask
+//
+//  always@(sim_time)begin
+//        for(int i=0; i<q_pending_addr.size(); i++)begin
+//        	q_adaptive_bgb.push_back(q_pending_addr[i][9:6]);
+//        	q_adaptive_row.push_back(q_pending_addr[i][32:18]);
+//        end
+//
+//	for(int i=0; i<q_adaptive_bgb.size(); i++)begin
+//		for(int j=0; j<q_adaptive_bgb.size(); j++)begin
+//		    if(i!=j)begin
+//			if(q_adaptive_bgb[i] == q_adaptive_bgb[j])begin
+//			    if(flag == 0)begin
+//				row_val_1 = q_adaptive_row[i];
+//				row_val_2 = q_adaptive_row[j];
+//				k = j;
+//				flag = 1;
+//				//continue; 
+//			    end else begin
+//				row_val_3 = q_adaptive_row[j];
+//				if(row_val_1 == row_val_3 && row_val_1 != row_val_2) begin
+//				  swap_j_to_i1(i,j);
+//				  set_starvation(k);
+//				  break;
+//				end
+//			    end
+//			end
+//		    end
+//		end
+//	end
+//  end 
 
 
 endmodule
