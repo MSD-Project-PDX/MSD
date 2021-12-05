@@ -45,6 +45,9 @@ module mem_ctrl;
 	$value$plusargs("debug_en=%d", debug_en);
   end
 
+
+  int flag_err;
+
   initial begin
 	ip = $fopen(ip_file, "r");
 
@@ -55,6 +58,7 @@ module mem_ctrl;
 			q_ip_time_next.push_back(t);
 			q_ip_oper_next.push_back(inst);
 			q_ip_addr_next.push_back(addr);
+			flag_err = 1;
 		end else begin
                     size_ip_q = q_ip_time_next.size();
 		    wait(!q_pending_full);
@@ -68,7 +72,7 @@ module mem_ctrl;
 		end
 		first_ip=0;
 		f_end = $feof(ip);
-		if(f_end == 1)begin
+		if(f_end == 1 && flag_err==0)begin
 			q_ip_time_next.delete(q_ip_time_next.size()-1);
 			q_ip_oper_next.delete(q_ip_oper_next.size()-1);
 			q_ip_addr_next.delete(q_ip_addr_next.size()-1);
@@ -178,6 +182,7 @@ module mem_ctrl;
 
   task add_to_pending_q(int i); 
         //longint unsigned temp_time;
+	$display("q_ip_time_next = %p", q_ip_time_next);
 	repeat(i) begin
 		q_pending_time.push_back(q_ip_time_next.pop_front());
 		q_pending_oper.push_back(q_ip_oper_next.pop_front());
@@ -218,22 +223,26 @@ module mem_ctrl;
   end
  
   
-  int q_reference;
-
+  bit add_flag;
   //MC Queue implemenation (Pending Q ---> MC Q)
   always@(sim_time)begin
+     
      repeat(16)begin
 	if(q_mc.size() < 16) begin
           if(q_pending_time.size()>0)begin
+	    add_flag = 1;
 	    q_mc.push_back(q_pending_time.pop_front());
 	    q_mc_oper.push_back(q_pending_oper.pop_front());
 	    q_mc_addr.push_back(q_pending_addr.pop_front());
-	    if (debug_en)
-	    	$display(">>>>>>>>Adding to MC queue...");
-	    display_q;
 	  end
 	end
      end
+     if(add_flag)
+       if (debug_en)begin
+           $display(">>>>>>>>Adding to MC queue...");
+	   display_q;
+       end
+     add_flag = 0;
   end 
 
   always@(sim_time) begin
@@ -274,12 +283,12 @@ module mem_ctrl;
   end
 
   initial begin 
-        $monitor("DB_ARR = %p",db_arr);
+        //$monitor("DB_ARR = %p",db_arr);
   end
 
 
   initial begin
-	#500 $finish; 
+	#50000 $finish; 
   end
 
   //always @(sim_time) begin
