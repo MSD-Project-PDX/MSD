@@ -20,6 +20,13 @@ module mem_ctrl;
   longint sim_time = -1;
   bit q_mc_full;
   bit q_pending_full;
+  int command_active;
+ 
+
+  bit refresh_en;
+  bit refresh_active;
+  int refresh_counter;
+  longint unsigned store_prev_ref_time;
 
   int f_end;
   int first_ip_in_q_serviced;
@@ -30,7 +37,7 @@ module mem_ctrl;
   int TRRD_L	= 2*6;
   int TRRD_S	= 2*4;
   int TRP	= 2*24;
-  //int TRFC	= 2*350ns;
+  int TRFC	= 2*560;//1120
   int CWL	= 2*20;
   int TCAS	= 2*24;
   int TRCD	= 2*24;
@@ -41,7 +48,7 @@ module mem_ctrl;
   int TBURST	= 2*4;
   int TWTR_L	= 2*12;
   int TWTR_S	= 2*4;
-  //int REFI	= 2*7.8𝛍s;
+  int REFI	= 2*12480;//24960
 
 
 
@@ -66,6 +73,7 @@ module mem_ctrl;
   initial begin
 	$value$plusargs("ip_file=%s", ip_file);
 	$value$plusargs("debug_en=%d", debug_en);
+	$value$plusargs("refresh_en=%d", refresh_en);
   end
 
 
@@ -104,19 +112,123 @@ module mem_ctrl;
 
   int db_arr[16][6]; 
   int arr[5]; 
-
-
   // VALID
   // 0  Has not been accessed at all
   // 1  Currently in progress
   //-1  Has been accessed before, but currently not active (Open page)
+
+  always@(sim_time) begin
+    fork
+      if(command_active > 0) command_active = command_active - 1 ;
+
+      if(refresh_en)begin
+	//if(sim_time % REFI == 0 && sim_time!=0) begin
+	if(sim_time == REFI+store_prev_ref_time && sim_time!=0) begin
+		refresh_active = 1;
+		command_active += TRFC;
+		refresh_counter = 0;
+		store_prev_ref_time = sim_time + TRFC;
+		$fwrite(op, "%0d \tREF\n", sim_time);
+	end
+	if(refresh_active) begin
+		refresh_counter++;
+		if(refresh_counter == TRFC) 
+			refresh_active = 0;
+	end
+      end
+    join
+  end
  
-  int a1 = 0;
+ 
 
   task automatic output_computation(int t, int bank_g, int bank, int r, int c, int operation);
 	if(t == 48)begin
+		wait(command_active == 0);
 		$fwrite(op, "%0d \tACT \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, r);
-		#(49+a1);
+		command_active = 2;
+		#49
+		if(operation[0] == 0) begin
+			wait(command_active == 0);
+			$fwrite(op,"%0d \tRD \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
+			command_active = 2;
+		end else if(operation == 1)begin
+			wait(command_active == 0);
+			$fwrite(op, "%0d \tWR \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
+			command_active = 2;
+		end
+	end else if(t == 56) begin
+		#9
+		wait(command_active == 0);
+		$fwrite(op, "%0d \tACT \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, r);
+		command_active = 2;
+		#49
+		wait(command_active == 0);
+		if(operation[0] == 0)begin
+			$fwrite(op, "%0d \tRD \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
+			command_active = 2;
+		end else if(operation == 1)begin
+			$fwrite(op, "%0d \tWR \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
+			command_active = 2;
+		end
+	end else if(t == 60)begin
+		#13
+		wait(command_active == 0);
+		$fwrite(op, "%0d \tACT \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, r);
+		command_active = 2;
+		#49
+		wait(command_active == 0);
+		if(operation[0] == 0)begin
+			$fwrite(op, "%0d \tRD \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
+			command_active = 2;
+		end else if(operation == 1)begin
+			$fwrite(op, "%0d \tWR \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
+			command_active = 2;
+		end
+	end else if(t == 120)begin
+		#25
+		wait(command_active == 0);
+		$fwrite(op, "%0d \tPRE \t%0h \t%0h\n", sim_time, bank_g, bank);
+		command_active = 2;
+		#49
+		wait(command_active == 0);
+		$fwrite(op, "%0d \tACT \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, r);
+		command_active = 2;
+		#49
+		wait(command_active == 0);
+		$fwrite(op, "%0d \tRD \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
+		command_active = 2;
+	end else if(t == 136)begin
+		#41
+		wait(command_active == 0);
+		$fwrite(op, "%0d \tPRE \t%0h \t%0h\n", sim_time, bank_g, bank);
+		command_active = 2;
+		#49
+		wait(command_active == 0);
+		$fwrite(op, "%0d \tACT \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, r);
+		command_active = 2;
+		#49
+		wait(command_active == 0);
+		$fwrite(op, "%0d \tWR \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
+		command_active = 2;
+	end else if(t == 24)begin
+		#25
+		wait(command_active == 0);
+		$fwrite(op, "%0d \tRD \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
+		command_active = 2;
+	end else if(t == 16)begin
+		#17
+		wait(command_active == 0);
+		$fwrite(op, "%0d \tRD \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
+		command_active = 2;
+	end
+  endtask
+
+
+/*
+task automatic output_computation(int t, int bank_g, int bank, int r, int c, int operation);
+	if(t == 48)begin
+		$fwrite(op, "%0d \tACT \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, r);
+		#49
 		if(operation[0] == 0)
 			$fwrite(op,"%0d \tRD \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
 		else if(operation == 1)
@@ -159,6 +271,7 @@ module mem_ctrl;
 		$fwrite(op, "%0d \tRD \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
 	end
   endtask
+*/
 
   int extra_delay = 0;
   int delay;
@@ -296,15 +409,17 @@ module mem_ctrl;
   bit start_service_flag = 0;
 
   always@(sim_time) begin
-     if(start_service_flag==0)begin
-	for(int i=0; i<q_mc.size(); i++)begin
+    if(!(refresh_en && refresh_active))begin
+       if(start_service_flag==0)begin
+	  for(int i=0; i<q_mc.size(); i++)begin
 	    if( db_arr[{q_mc_addr[i][7:6],q_mc_addr[i][9:8]}][0] == 0 || db_arr[{q_mc_addr[i][7:6],q_mc_addr[i][9:8]}][0] == -1)begin		//Checking for VALID not set
 	        calc_valid_time(q_mc_oper[i], q_mc_addr[i], i);
 		start_service_flag = 2;  //encoded value
 		break;
 	    end
-	end
-     end
+	  end
+       end
+     end //refresh
      start_service_flag--;
   end
 
