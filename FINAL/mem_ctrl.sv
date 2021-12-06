@@ -18,6 +18,7 @@ module mem_ctrl;
   int size_ip_q;
   int size_ip_q_copy;
   longint sim_time = -1;
+  //longint unsigned sim_time ;
   bit q_mc_full;
   bit q_pending_full;
   int command_active;
@@ -30,7 +31,7 @@ module mem_ctrl;
 
   int f_end;
   int first_ip_in_q_serviced;
-  longint last_req_time;
+  longint unsigned last_req_time;
 
   int TRC	= 2*76;
   int TRAS	= 2*52;
@@ -74,6 +75,21 @@ module mem_ctrl;
 	$value$plusargs("ip_file=%s", ip_file);
 	$value$plusargs("debug_en=%d", debug_en);
 	$value$plusargs("refresh_en=%d", refresh_en);
+
+	$display("\n\n\n\tECE-485/585: MICROPROCESSOR SYSTEM DESIGN PROJECT\n\n");
+	$display("\n\tFINAL PROJECT - GROUP 7\n");
+	$display("\tDINESH KUMAR SIVA");
+	$display("\tPRADEEP MANTHU REDDY");
+	$display("\tNARENDRA SRINIVAS");
+	$display("\tNAVEEN MANIVANNAN\n\n");
+
+	$display("\tMEMORY CONTROLLER IMPLEMENTATION FOR A 4-CORE PROCESSOR TO DIMM");
+	$display("\t\tProcessor: 3.2GHz, 4-core, single memory channel");
+	$display("\t\tMemory   : 8GB PC4-25600 DIMM (with X8 devices) || Page Size = 2KB || No ECC");
+
+	$display("\n\nDRAM COMMANDS and Scheduling details: output_file.txt");
+
+	$display("\n\n\n");
   end
 
 
@@ -452,13 +468,15 @@ task automatic output_computation(int t, int bank_g, int bank, int r, int c, int
 	end
   end
 
-  initial begin 
-        //$monitor("DB_ARR = %p",db_arr);
-  end
+//  //ADVANCE SIMULATION TIME IF Q IS EMPTY
+//  always@(sim_time)begin
+//	if(q_pending_time.size()==0 && q_mc.size()==0) sim_time = q_ip_time_next[0];
+//  end
 
   always @(sim_time) begin
-	if(sim_time == last_req_time + 10000) begin
-          $display("last_req_time = %d  LAST = %0d",last_req_time, sim_time);
+	if(sim_time == t + 10000) begin
+	  $fclose(ip);
+	  $fclose(op);
           $finish; 
         end
   end
