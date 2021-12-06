@@ -1,5 +1,6 @@
 module mem_ctrl;
   int ip;
+  int op;
   longint unsigned t;
   int inst;
   bit [32:0] addr;
@@ -71,6 +72,7 @@ module mem_ctrl;
 
   initial begin
 	ip = $fopen(ip_file, "r");
+	op = $fopen("output_file.txt", "w");
 
 	while(f_end==0) begin
 		if($fscanf(ip, "%d %d %h", t, inst, addr) == 3)begin
@@ -111,48 +113,48 @@ module mem_ctrl;
 
   task automatic output_computation(int t, int bank_g, int bank, int r, int c, int operation);
 	if(t == 48)begin
-		$display("%0d \tACT \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r);
+		$fwrite(op, "%0d \tACT \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, r);
 		#48
 		if(operation[0] == 0)
-			$display("%0d \tRD \t%0h \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r, c);
+			$fwrite(op,"%0d \tRD \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
 		else if(operation == 1)
-			$display("%0d \tWR \t%0h \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r, c);
+			$fwrite(op, "%0d \tWR \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
 	end else if(t == 56) begin
 		#8
-		$display("%0d \tACT \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r);
+		$fwrite(op, "%0d \tACT \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, r);
 		#48
 		if(operation[0] == 0)
-			$display("%0d \tRD \t%0h \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r, c);
+			$fwrite(op, "%0d \tRD \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
 		else if(operation == 1)
-			$display("%0d \tWR \t%0h \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r, c);
+			$fwrite(op, "%0d \tWR \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
 	end else if(t == 60)begin
 		#12
-		$display("%0d \tACT \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r);
+		$fwrite(op, "%0d \tACT \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, r);
 		#48
 		if(operation[0] == 0)
-			$display("%0d \tRD \t%0h \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r, c);
+			$fwrite(op, "%0d \tRD \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
 		else if(operation == 1)
-			$display("%0d \tWR \t%0h \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r, c);
+			$fwrite(op, "%0d \tWR \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
 	end else if(t == 120)begin
 		#24
-		$display("%0d \tPRE \t%0h \t%0h", sim_time, bank_g, bank);
+		$fwrite(op, "%0d \tPRE \t%0h \t%0h\n", sim_time, bank_g, bank);
 		#48
-		$display("%0d \tACT \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r);
+		$fwrite(op, "%0d \tACT \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, r);
 		#48
-		$display("%0d \tRD \t%0h \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r, c);
+		$fwrite(op, "%0d \tRD \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
 	end else if(t == 136)begin
 		#40
-		$display("%0d \tPRE \t%0h \t%0h", sim_time, bank_g, bank);
+		$fwrite(op, "%0d \tPRE \t%0h \t%0h\n", sim_time, bank_g, bank);
 		#48
-		$display("%0d \tACT \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r);
+		$fwrite(op, "%0d \tACT \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, r);
 		#48
-		$display("%0d \tWR \t%0h \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r, c);
+		$fwrite(op, "%0d \tWR \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
 	end else if(t == 24)begin
 		#24
-		$display("%0d \tRD \t%0h \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r, c);
+		$fwrite(op, "%0d \tRD \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
 	end else if(t == 16)begin
 		#16
-		$display("%0d \tRD \t%0h \t%0h \t%0h \t%0h", sim_time, bank_g, bank, r, c);
+		$fwrite(op, "%0d \tRD \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
 	end
   endtask
 
