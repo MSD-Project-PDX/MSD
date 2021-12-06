@@ -10,6 +10,7 @@ module mem_ctrl;
   longint unsigned q_pending_time[$:15];
   int q_pending_oper[$:15];
   bit [32:0] q_pending_addr[$:15];
+  int q_starvation[$:15];
   longint unsigned q_ip_time_next [$:3];
   int q_ip_oper_next [$:3];
   bit [32:0] q_ip_addr_next [$:3];
@@ -28,6 +29,8 @@ module mem_ctrl;
   bit refresh_active;
   int refresh_counter;
   longint unsigned store_prev_ref_time;
+ 
+  bit adaptive_en;
 
   int f_end;
   int first_ip_in_q_serviced;
@@ -75,6 +78,7 @@ module mem_ctrl;
 	$value$plusargs("ip_file=%s", ip_file);
 	$value$plusargs("debug_en=%d", debug_en);
 	$value$plusargs("refresh_en=%d", refresh_en);
+	$value$plusargs("adaptive_en=%d", adaptive_en);
 
 	$display("\n\n\n\tECE-485/585: MICROPROCESSOR SYSTEM DESIGN PROJECT\n\n");
 	$display("\n\tFINAL PROJECT - GROUP 7\n");
@@ -299,6 +303,8 @@ task automatic output_computation(int t, int bank_g, int bank, int r, int c, int
 	if(first == 0) begin
 		arr = {bg, b, row, col, oper};
 		t = TRCD;
+		delay = t;
+		//delay = t;
 	end else begin
 		if(arr[0] != bg) extra_delay  = TRRD_S;
 		else
@@ -334,6 +340,9 @@ task automatic output_computation(int t, int bank_g, int bank, int r, int c, int
 		    end
 		end 
 	end
+	t = delay;
+	//$display("delay_final fro the loop  = %0d", delay);	
+
 	fork
 		output_computation(t, bg, b, row, col, oper);
 	join_none
@@ -362,6 +371,9 @@ task automatic output_computation(int t, int bank_g, int bank, int r, int c, int
 
   task add_to_pending_q(int i);
 	repeat(i) begin
+		if(adaptive_en)begin
+		  q_starvation.push_back(0);
+		end
 		q_pending_time.push_back(q_ip_time_next.pop_front());
 		q_pending_oper.push_back(q_ip_oper_next.pop_front());
 		q_pending_addr.push_back(q_ip_addr_next.pop_front());
@@ -411,6 +423,9 @@ task automatic output_computation(int t, int bank_g, int bank, int r, int c, int
 	    q_mc.push_back(q_pending_time.pop_front());
 	    q_mc_oper.push_back(q_pending_oper.pop_front());
 	    q_mc_addr.push_back(q_pending_addr.pop_front());
+	    if(adaptive_en)begin
+		  q_starvation.pop_front();
+	    end
 	  end
 	end
      end
@@ -481,69 +496,91 @@ task automatic output_computation(int t, int bank_g, int bank, int r, int c, int
         end
   end
 
-//  //ADAPTIVE SCHEDULING
-//  int bgb; 
-//  int k;
-//  int q_adaptive_bgb[$:15];
-//  int q_adaptive_row[$:15];
-//  int q_starvation[$:15];
-//  int flag;
-//  int row_val_1, row_val_2, row_val_3;
-//
-//  longint unsigned time_temp;
-//  int oper_temp;
-//  bit [33:0] addr_temp;
-//
-//
-//  task swap_j_to_i1 (int i, int j);
-//	time_temp = q_pending_time[j];
-//	oper_temp = q_pending_oper[j];
-//	addr_temp = q_pending_addr[j];
-//
-//	q_pending_time.delete(j);
-//	q_pending_oper.delete(j);
-//	q_pending_addr.delete(j);
-//
-//	q_pending_time.insert(i+1,time_temp);
-//	q_pending_oper.insert(i+1,oper_temp);
-//	q_pending_addr.insert(i+1,addr_temp);
-//  endtask
-//
-//  task automatic set_starvation(int k);
-//	int temp;
-//	temp = 
-//	q_starvation
-//  endtask
-//
-//  always@(sim_time)begin
-//        for(int i=0; i<q_pending_addr.size(); i++)begin
-//        	q_adaptive_bgb.push_back(q_pending_addr[i][9:6]);
-//        	q_adaptive_row.push_back(q_pending_addr[i][32:18]);
-//        end
-//
-//	for(int i=0; i<q_adaptive_bgb.size(); i++)begin
-//		for(int j=0; j<q_adaptive_bgb.size(); j++)begin
-//		    if(i!=j)begin
-//			if(q_adaptive_bgb[i] == q_adaptive_bgb[j])begin
-//			    if(flag == 0)begin
-//				row_val_1 = q_adaptive_row[i];
-//				row_val_2 = q_adaptive_row[j];
-//				k = j;
-//				flag = 1;
-//				//continue; 
-//			    end else begin
-//				row_val_3 = q_adaptive_row[j];
-//				if(row_val_1 == row_val_3 && row_val_1 != row_val_2) begin
-//				  swap_j_to_i1(i,j);
-//				  set_starvation(k);
-//				  break;
-//				end
-//			    end
-//			end
-//		    end
-//		end
-//	end
-//  end 
+  //ADAPTIVE SCHEDULING
+  int bgb; 
+  int k;
+  int q_adaptive_bgb[$:15];
+  int q_adaptive_row[$:15];
+  //int q_starvation[$:15];
+  int flag;
+  int row_val_1, row_val_2, row_val_3;
 
+  longint unsigned time_temp;
+  int oper_temp;
+  bit [33:0] addr_temp;
+  int star_temp;
+
+
+  task swap_j_to_i1 (int i, int j);
+	time_temp = q_pending_time[j];
+	oper_temp = q_pending_oper[j];
+	addr_temp = q_pending_addr[j];
+	star_temp = q_starvation[j];
+
+	q_pending_time.delete(j);
+	q_pending_oper.delete(j);
+	q_pending_addr.delete(j);
+	q_starvation.delete(j);
+
+	q_pending_time.insert(i+1,time_temp);
+	q_pending_oper.insert(i+1,oper_temp);
+	q_pending_addr.insert(i+1,addr_temp);
+	q_starvation.insert(i+1,star_temp);
+  endtask
+
+  int starvation_value = 100;
+
+  always@(sim_time)begin
+     if(adaptive_en) begin
+        for(int i=0; i<q_pending_addr.size(); i++)begin
+        	//q_adaptive_bgb.push_back(q_pending_addr[i][9:6]);
+        	//q_adaptive_row.push_back(q_pending_addr[i][32:18]);
+        	q_adaptive_bgb[i] = q_pending_addr[i][9:6];
+        	q_adaptive_row[i] = q_pending_addr[i][32:18];
+        end
+
+	for(int i=0; i<q_adaptive_bgb.size(); i++)begin
+	  for(int j=0; j<q_adaptive_bgb.size(); j++)begin
+	    if(i!=j)begin
+	      if(q_adaptive_bgb[i] == q_adaptive_bgb[j])begin
+	        if(flag == 0)begin
+		  row_val_1 = q_adaptive_row[i];
+		  row_val_2 = q_adaptive_row[j];
+		  k = j;
+		  flag = 1;
+		  //continue; 
+		end else begin
+		  row_val_3 = q_adaptive_row[j];
+		  if(row_val_1 == row_val_3 && row_val_1 != row_val_2) begin
+		    swap_j_to_i1(i,j);
+		    q_starvation[k] = 1; //1 to max starvation value
+		    //set_starvation(k);
+		    break;
+		  end
+		end
+	      end
+	    end
+	  end
+	end
+     end
+  end 
+
+  //always@(sim_time) begin
+  //      $display("PENDING QUEUE @%0d SIZE=%0d q_pending_addr = %p\n\n", sim_time, q_pending_addr.size(), q_pending_addr);
+  //end
+
+  always@(sim_time) begin
+    for(int i=0; i<16; i++)begin
+	if(q_starvation[i] != 0) q_starvation[i]++;
+
+	if(q_starvation[i] == starvation_value) begin
+	  swap_j_to_i1(0, i);
+	end
+    end
+  end
+
+  //always@(sim_time)begin
+  //      $display("db_arr = %p",db_arr);
+  //end
 
 endmodule
