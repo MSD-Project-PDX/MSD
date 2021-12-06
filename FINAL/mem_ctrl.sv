@@ -110,50 +110,52 @@ module mem_ctrl;
   // 0  Has not been accessed at all
   // 1  Currently in progress
   //-1  Has been accessed before, but currently not active (Open page)
+ 
+  int a1 = 0;
 
   task automatic output_computation(int t, int bank_g, int bank, int r, int c, int operation);
 	if(t == 48)begin
 		$fwrite(op, "%0d \tACT \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, r);
-		#48
+		#(49+a1);
 		if(operation[0] == 0)
 			$fwrite(op,"%0d \tRD \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
 		else if(operation == 1)
 			$fwrite(op, "%0d \tWR \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
 	end else if(t == 56) begin
-		#8
+		#9
 		$fwrite(op, "%0d \tACT \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, r);
-		#48
+		#49
 		if(operation[0] == 0)
 			$fwrite(op, "%0d \tRD \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
 		else if(operation == 1)
 			$fwrite(op, "%0d \tWR \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
 	end else if(t == 60)begin
-		#12
+		#13
 		$fwrite(op, "%0d \tACT \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, r);
-		#48
+		#49
 		if(operation[0] == 0)
 			$fwrite(op, "%0d \tRD \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
 		else if(operation == 1)
 			$fwrite(op, "%0d \tWR \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
 	end else if(t == 120)begin
-		#24
+		#25
 		$fwrite(op, "%0d \tPRE \t%0h \t%0h\n", sim_time, bank_g, bank);
-		#48
+		#49
 		$fwrite(op, "%0d \tACT \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, r);
-		#48
+		#49
 		$fwrite(op, "%0d \tRD \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
 	end else if(t == 136)begin
-		#40
+		#41
 		$fwrite(op, "%0d \tPRE \t%0h \t%0h\n", sim_time, bank_g, bank);
-		#48
+		#49
 		$fwrite(op, "%0d \tACT \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, r);
-		#48
+		#49
 		$fwrite(op, "%0d \tWR \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
 	end else if(t == 24)begin
-		#24
+		#25
 		$fwrite(op, "%0d \tRD \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
 	end else if(t == 16)begin
-		#16
+		#17
 		$fwrite(op, "%0d \tRD \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
 	end
   endtask
@@ -269,8 +271,8 @@ module mem_ctrl;
 
  
  
-  bit add_flag;
   //MC Queue implemenation (Pending Q ---> MC Q)
+  bit add_flag;
   always@(sim_time)begin
      
      repeat(16)begin
@@ -290,14 +292,20 @@ module mem_ctrl;
        end
      add_flag = 0;
   end 
+ 
+  bit start_service_flag = 0;
 
   always@(sim_time) begin
+     if(start_service_flag==0)begin
 	for(int i=0; i<q_mc.size(); i++)begin
 	    if( db_arr[{q_mc_addr[i][7:6],q_mc_addr[i][9:8]}][0] == 0 || db_arr[{q_mc_addr[i][7:6],q_mc_addr[i][9:8]}][0] == -1)begin		//Checking for VALID not set
 	        calc_valid_time(q_mc_oper[i], q_mc_addr[i], i);
+		start_service_flag = 2;  //encoded value
 		break;
 	    end
 	end
+     end
+     start_service_flag--;
   end
 
   task update_db(int a);
