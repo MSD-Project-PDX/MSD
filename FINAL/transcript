@@ -1,0 +1,58 @@
+# vsim -c -do "run -all" mem_ctrl "+ip_file=../TESTCASES/tracefile/tracefile_final.txt" "+refresh_en=1" "+adaptive_en=1" 
+# Start time: 14:56:17 on Dec 07,2021
+# ** Note: (vsim-3812) Design is being optimized...
+# ** Warning: mem_ctrl.sv(427): (vopt-2240) Treating stand-alone use of function 'pop_front' as an implicit VOID cast.
+# //  Questa Sim-64
+# //  Version 2019.2_1 linux_x86_64 May 13 2019
+# //
+# //  Copyright 1991-2019 Mentor Graphics Corporation
+# //  All Rights Reserved.
+# //
+# //  QuestaSim and its associated documentation contain trade
+# //  secrets and commercial or financial information that are the property of
+# //  Mentor Graphics Corporation and are privileged, confidential,
+# //  and exempt from disclosure under the Freedom of Information Act,
+# //  5 U.S.C. Section 552. Furthermore, this information
+# //  is prohibited from disclosure under the Trade Secrets Act,
+# //  18 U.S.C. Section 1905.
+# //
+# Loading sv_std.std
+# Loading work.mem_ctrl(fast)
+# ** Warning: (vsim-PLI-3691) Expected a system task, not a system function '$value$plusargs'.
+#    Time: 0 ns  Iteration: 0  Instance: /mem_ctrl File: mem_ctrl.sv Line: 78
+# ** Warning: (vsim-PLI-3691) Expected a system task, not a system function '$value$plusargs'.
+#    Time: 0 ns  Iteration: 0  Instance: /mem_ctrl File: mem_ctrl.sv Line: 79
+# ** Warning: (vsim-PLI-3691) Expected a system task, not a system function '$value$plusargs'.
+#    Time: 0 ns  Iteration: 0  Instance: /mem_ctrl File: mem_ctrl.sv Line: 80
+# ** Warning: (vsim-PLI-3691) Expected a system task, not a system function '$value$plusargs'.
+#    Time: 0 ns  Iteration: 0  Instance: /mem_ctrl File: mem_ctrl.sv Line: 81
+# run -all
+# 
+# 
+# 
+# 	ECE-485/585: MICROPROCESSOR SYSTEM DESIGN PROJECT
+# 
+# 
+# 
+# 	FINAL PROJECT - GROUP 7
+# 
+# 	DINESH KUMAR SIVA
+# 	PRADEEP MANTHU REDDY
+# 	NARENDRA SRINIVAS
+# 	NAVEEN MANIVANNAN
+# 
+# 
+# 	MEMORY CONTROLLER IMPLEMENTATION FOR A 4-CORE PROCESSOR TO DIMM
+# 		Processor: 3.2GHz, 4-core, single memory channel
+# 		Memory   : 8GB PC4-25600 DIMM (with X8 devices) || Page Size = 2KB || No ECC
+# 
+# 
+# DRAM COMMANDS and Scheduling details: output_file.txt
+# 
+# 
+# 
+# 
+# ** Note: $finish    : mem_ctrl.sv(495)
+#    Time: 11005 ns  Iteration: 1  Instance: /mem_ctrl
+# End time: 14:56:18 on Dec 07,2021, Elapsed time: 0:00:01
+# Errors: 0, Warnings: 5
