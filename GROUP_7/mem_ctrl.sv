@@ -19,7 +19,6 @@ module mem_ctrl;
   int size_ip_q;
   int size_ip_q_copy;
   longint sim_time = -1;
-  //longint unsigned sim_time ;
   bit q_mc_full;
   bit q_pending_full;
   int command_active;
@@ -56,11 +55,10 @@ module mem_ctrl;
 
 
 
-
+  //PROCESSOR TIMER
   always begin
 	#1 sim_time++;
   end
-
   always @ (sim_time) begin
      fork
 	if(q_mc.size() == 16) q_mc_full = 1;
@@ -71,10 +69,11 @@ module mem_ctrl;
      join
   end
 
+
+  //INPUT AND OUTPUT FILE HANDLING
   string ip_file;
   string op_file;
   int debug_en;
-
   initial begin
 	$value$plusargs("ip_file=%s", ip_file);
 	$value$plusargs("op_file=%s", op_file);
@@ -99,7 +98,7 @@ module mem_ctrl;
   end
 
 
-
+  //READING THE INPUT FILE LINE BY LINE WITH RESPECT TO THE SIMULATION TIME
   initial begin
 	ip = $fopen(ip_file, "r");
 	op = $fopen(op_file, "w");
@@ -133,12 +132,15 @@ module mem_ctrl;
   end
 
   int db_arr[16][6]; 
-  int arr[5]; 
-  // VALID
+  int arr[5];
+ 
+  // VALID in DB_ARR
   // 0  Has not been accessed at all
   // 1  Currently in progress
   //-1  Has been accessed before, but currently not active (Open page)
 
+
+  // REFRESH_EN IMPLEMENTATION
   always@(sim_time) begin
     fork
       if(command_active > 0) command_active = command_active - 1 ;
@@ -162,6 +164,9 @@ module mem_ctrl;
   end
  
  
+  //PRINTING THE DRAM COMMANDS IN THE OUTPUT FILE (AUTOMATIC TASK FOR BANK PARALLELISM)
+
+  //command_active --> VARIABLE IS USED TO AVOID ISSUING MORE THAN ONE DRAM COMMAND AT THE SAME TIME
 
   task automatic output_computation(int t, int bank_g, int bank, int r, int c, int operation);
 	if(t == 48)begin
@@ -245,59 +250,10 @@ module mem_ctrl;
 	end
   endtask
 
-
-/*
-task automatic output_computation(int t, int bank_g, int bank, int r, int c, int operation);
-	if(t == 48)begin
-		$fwrite(op, "%0d \tACT \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, r);
-		#49
-		if(operation[0] == 0)
-			$fwrite(op,"%0d \tRD \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
-		else if(operation == 1)
-			$fwrite(op, "%0d \tWR \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
-	end else if(t == 56) begin
-		#9
-		$fwrite(op, "%0d \tACT \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, r);
-		#49
-		if(operation[0] == 0)
-			$fwrite(op, "%0d \tRD \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
-		else if(operation == 1)
-			$fwrite(op, "%0d \tWR \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
-	end else if(t == 60)begin
-		#13
-		$fwrite(op, "%0d \tACT \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, r);
-		#49
-		if(operation[0] == 0)
-			$fwrite(op, "%0d \tRD \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
-		else if(operation == 1)
-			$fwrite(op, "%0d \tWR \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
-	end else if(t == 120)begin
-		#25
-		$fwrite(op, "%0d \tPRE \t%0h \t%0h\n", sim_time, bank_g, bank);
-		#49
-		$fwrite(op, "%0d \tACT \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, r);
-		#49
-		$fwrite(op, "%0d \tRD \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
-	end else if(t == 136)begin
-		#41
-		$fwrite(op, "%0d \tPRE \t%0h \t%0h\n", sim_time, bank_g, bank);
-		#49
-		$fwrite(op, "%0d \tACT \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, r);
-		#49
-		$fwrite(op, "%0d \tWR \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
-	end else if(t == 24)begin
-		#25
-		$fwrite(op, "%0d \tRD \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
-	end else if(t == 16)begin
-		#17
-		$fwrite(op, "%0d \tRD \t%0h \t%0h \t%0h\n", sim_time, bank_g, bank, c);
-	end
-  endtask
-*/
-
+  //CALCULATING SERVICE TIME FOR EACH REQUEST IN THE QUEUE (BANK PARALLELISM IS IMPLEMENTED)
+  //IN THE QUEUE, THERE IS A POSSIBILITY THAT ALL THE REQUESTS ARE BEING SERVICED IN PARALLEL
   int extra_delay = 0;
   int delay;
-
   task calc_time(int bg, int b, int bg_b, int row, int col, int oper, int first, output int t);
 
 	extra_delay = 0;
@@ -343,13 +299,14 @@ task automatic output_computation(int t, int bank_g, int bank, int r, int c, int
 		end 
 	end
 	t = delay;
-	//$display("delay_final fro the loop  = %0d", delay);	
 
+	// USING FORK JOIN_NONE; THE SERVICE TIME IS CALCULATED DYNAMICALLY AND THE DRAM COMMANDS ARE ISSUED
 	fork
 		output_computation(t, bg, b, row, col, oper);
 	join_none
   endtask
 
+  // BY COMPARING THE ROW VALUE STORED IN THE DATABASE FOR THE BG AND B COMBINATION, THE CALC_TIME TASK IS GIVEN WITH REQUIRED ARGUMENTS
   task automatic calc_valid_time(int local_oper, bit [32:0] local_addr, int q_ref);
 
      bit [1:0] BG, B;
@@ -371,6 +328,9 @@ task automatic output_computation(int t, int bank_g, int bank, int r, int c, int
   endtask
 
 
+  // ADDING NEW REQUESTS FROM THE PROCESSOR TO PENDING QUEUE
+  // THERE IS NO DELAY IS SENDING TO THE MAIN QUEUE WHEN THE MAIN QUEUE IS NOT FULL
+  // WHEN MAIN QUEUE IS FULL, THE REMAINING REQUESTS WILL BE STORED IN THE PENDING QUEUE (SCHEDULING HAPPENS HERE, IF ENABLED)
   task add_to_pending_q(int i);
 	repeat(i) begin
 		if(adaptive_en)begin
@@ -385,8 +345,6 @@ task automatic output_computation(int t, int bank_g, int bank, int r, int c, int
 	display_pending_q;
   endtask
 
-
-
   task display_q;
      if(debug_en) begin
 	$display("MC QUEUE @%0d SIZE=%0d q_mc = %p\n\n", sim_time, q_mc.size(), q_mc);
@@ -400,7 +358,7 @@ task automatic output_computation(int t, int bank_g, int bank, int r, int c, int
   endtask
 
 
-  //Pending queue implementation
+  //IMPLEMENTATION FOR PENDING QUEUE
   always@(sim_time) begin
      if(q_ip_time_next.size()>0)begin
 	if( ((last_ip==0 && q_ip_time_next.size()>0) || (last_ip==1 && q_ip_time_next.size()>0)) && (q_ip_time_next[0] >= sim_time) )begin
@@ -414,10 +372,9 @@ task automatic output_computation(int t, int bank_g, int bank, int r, int c, int
 
  
  
-  //MC Queue implemenation (Pending Q ---> MC Q)
+  //MC QUEUE (MAIN QUEUE) IMPLEMENATION (PENDING Q ---> MC Q)
   bit add_flag;
   always@(sim_time)begin
-     
      repeat(16)begin
 	if(q_mc.size() < 16) begin
           if(q_pending_time.size()>0)begin
@@ -426,7 +383,7 @@ task automatic output_computation(int t, int bank_g, int bank, int r, int c, int
 	    q_mc_oper.push_back(q_pending_oper.pop_front());
 	    q_mc_addr.push_back(q_pending_addr.pop_front());
 	    if(adaptive_en)begin
-		  q_starvation.pop_front();
+		  q_starvation.pop_front();	//STARVATION QUEUE STORES THE STARVATION VALUE AND INCREMENTS THE VALUE IF THERE IS ADAPTIVE SCHEDULING
 	    end
 	  end
 	end
@@ -439,8 +396,9 @@ task automatic output_computation(int t, int bank_g, int bank, int r, int c, int
      add_flag = 0;
   end 
  
+  //BASED ON THE PREVIOUSLY SERVICED REQUESTS AND CURRENTLY BEING SERVICED REQUESTS, THE NEW ITEMS WILL BE STARTED TO SCHEDULED HERE
+  //start_service_flag --> VARIABLE IS USED TO SCHEDULE THE REQUESTS ARE ALTERNATE PROCESSOR CLOCK CYCLES AS PROCESSOR TIME X 2 = DRAM TIME PERIOD
   bit start_service_flag = 0;
-
   always@(sim_time) begin
     if(!(refresh_en && refresh_active))begin
        if(start_service_flag==0)begin
@@ -456,6 +414,7 @@ task automatic output_computation(int t, int bank_g, int bank, int r, int c, int
      start_service_flag--;
   end
 
+  //AFTER COMPLETING A REQUEST, THE ITEM SHOULD BE REMOVED FROM THE QUEUE; ALSO THE DATABASE HAS TO BE UPDATED
   task update_db(int a);
 	for(int i=0; i<16; i++)begin
 	  if(db_arr[i][0]==1)begin
@@ -463,14 +422,13 @@ task automatic output_computation(int t, int bank_g, int bank, int r, int c, int
 		db_arr[i][4] =-1;
 	    	db_arr[i][0] = -1;
 	    end
-
 	    if(db_arr[i][4] > a && db_arr[i][4] >0)
 		db_arr[i][4] = db_arr[i][4]-1;
 	  end
 	end
   endtask
 
-  //REMOVE FROM MC Q
+  //REMOVE ITEMS FROM MC QUEUE AFTER SERVICING IS FINISHED AND UPDATE THE DATABASE FOR THE LAST REQUEST CORRESPONDING TO THE BG AND B COMBINATION
   always@(sim_time) begin
 	for(int i=0; i<16; i++)begin
 	    if(db_arr[i][0] == 1 && db_arr[i][1] == 0) begin
@@ -490,6 +448,7 @@ task automatic output_computation(int t, int bank_g, int bank, int r, int c, int
 //	if(q_pending_time.size()==0 && q_mc.size()==0) sim_time = q_ip_time_next[0];
 //  end
 
+  //CALLING FINISH AFTER 10000 CLOCK CYCLES (10000 IS CHOSEN BECAUSE REFRESH IS ENABLED)
   always @(sim_time) begin
 	if(sim_time == t + 10000) begin
 	  $fclose(ip);
@@ -503,7 +462,6 @@ task automatic output_computation(int t, int bank_g, int bank, int r, int c, int
   int k;
   int q_adaptive_bgb[$:15];
   int q_adaptive_row[$:15];
-  //int q_starvation[$:15];
   int flag;
   int row_val_1, row_val_2, row_val_3;
 
@@ -512,7 +470,9 @@ task automatic output_computation(int t, int bank_g, int bank, int r, int c, int
   bit [33:0] addr_temp;
   int star_temp;
 
+  //SWAP THE CONTENTS OF THE QUEUE WHEN THERE IS A POSSIBILITY FOR ADAPTIVE SCHEDULING
 
+  //CONSECUITVE ACCESSES TO SAME BG B AND R COMBINATIONS ARE CHOSEN FOR ADAPTIVE SCHEDULING
   task swap_j_to_i1 (int i, int j);
 	time_temp = q_pending_time[j];
 	oper_temp = q_pending_oper[j];
@@ -530,13 +490,11 @@ task automatic output_computation(int t, int bank_g, int bank, int r, int c, int
 	q_starvation.insert(i+1,star_temp);
   endtask
 
-  int starvation_value = 100;
-
+  int starvation_value = 100; //AFTER ADAPTIVE SCHEDULING IS DONE, THE ITEM WHICH IS DE-PRIORITISED WILL BE UPDATED WITH THE STARVATION VALUE
+  //ONCE IT REACHES THE MAXIMUM VALUE (100 IN THIS CASE) THIS REQUEST WILL BE PUT IN THE TOP OF THE QUEUE (FOR HIGH PRIORITY)
   always@(sim_time)begin
      if(adaptive_en) begin
         for(int i=0; i<q_pending_addr.size(); i++)begin
-        	//q_adaptive_bgb.push_back(q_pending_addr[i][9:6]);
-        	//q_adaptive_row.push_back(q_pending_addr[i][32:18]);
         	q_adaptive_bgb[i] = q_pending_addr[i][9:6];
         	q_adaptive_row[i] = q_pending_addr[i][32:18];
         end
@@ -550,13 +508,11 @@ task automatic output_computation(int t, int bank_g, int bank, int r, int c, int
 		  row_val_2 = q_adaptive_row[j];
 		  k = j;
 		  flag = 1;
-		  //continue; 
 		end else begin
 		  row_val_3 = q_adaptive_row[j];
 		  if(row_val_1 == row_val_3 && row_val_1 != row_val_2) begin
 		    swap_j_to_i1(i,j);
 		    q_starvation[k] = 1; //1 to max starvation value
-		    //set_starvation(k);
 		    break;
 		  end
 		end
@@ -567,10 +523,6 @@ task automatic output_computation(int t, int bank_g, int bank, int r, int c, int
      end
   end 
 
-  //always@(sim_time) begin
-  //      $display("PENDING QUEUE @%0d SIZE=%0d q_pending_addr = %p\n\n", sim_time, q_pending_addr.size(), q_pending_addr);
-  //end
-
   always@(sim_time) begin
     for(int i=0; i<16; i++)begin
 	if(q_starvation[i] != 0) q_starvation[i]++;
@@ -580,9 +532,5 @@ task automatic output_computation(int t, int bank_g, int bank, int r, int c, int
 	end
     end
   end
-
-  //always@(sim_time)begin
-  //      $display("db_arr = %p",db_arr);
-  //end
 
 endmodule
